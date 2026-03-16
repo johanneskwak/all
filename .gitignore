@@ -1,0 +1,10 @@
+# OS files
+.DS_Store
+Thumbs.db
+
+# Brain/Logs/Artifacts (if any should be excluded, but usually user wants them)
+# .gemini/
+
+# Temp files
+tmp/
+*.log

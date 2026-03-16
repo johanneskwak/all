@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>인생 게임: 아비투스 시뮬레이션</title>
+    <style>
+        body { font-family: 'Malgun Gothic', sans-serif; background-color: #2c3e50; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; color: #333; }
+        .container { background-color: #ecf0f1; padding: 30px; border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.2); width: 450px; text-align: center; position: relative; }
+        h1, h2, h3 { color: #2c3e50; }
+        button { background-color: #3498db; color: white; border: none; padding: 12px 20px; margin: 10px 0; border-radius: 6px; cursor: pointer; font-size: 16px; width: 100%; font-weight: bold; transition: 0.2s; }
+        button:hover { background-color: #2980b9; }
+        button:disabled { background-color: #95a5a6; cursor: not-allowed; }
+        .step { display: none; }
+        .active { display: block; }
+        input[type="number"] { width: 100%; padding: 12px; margin: 10px 0; box-sizing: border-box; border: 1px solid #bdc3c7; border-radius: 6px; text-align: center; font-size: 1.1em; }
+        
+        .job-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .job-btn { margin: 0; background-color: #27ae60; }
+        .job-btn:hover { background-color: #2ecc71; }
+        .job-btn:disabled { background-color: #7f8c8d; }
+        
+        .inventory { background-color: #fff; border: 2px dashed #34495e; padding: 10px; border-radius: 8px; margin-bottom: 20px; text-align: left; }
+        .inventory span { font-weight: bold; color: #e74c3c; }
+        
+        .event-card { background-color: #e74c3c; color: white; padding: 20px; border-radius: 8px; margin: 20px 0; font-size: 1.2em; font-weight: bold; }
+        .btn-friend { background-color: #f39c12; }
+        .btn-friend:hover { background-color: #d68910; }
+        .btn-danger { background-color: #c0392b; }
+        .btn-danger:hover { background-color: #a93226; }
+
+        .ranking-item { background: white; padding: 10px; margin: 5px 0; border-radius: 5px; display: flex; justify-content: space-between; font-weight: bold; border-left: 5px solid #3498db; }
+        
+        .quiz-option { background-color: #ffffff; color: #2c3e50; border: 2px solid #bdc3c7; margin: 5px 0; padding: 15px; text-align: left; }
+        .quiz-option:hover { background-color: #d6eaf8; border-color: #3498db; }
+        
+        .edu-btn { border: 2px solid #8e44ad; background-color: white; color: #8e44ad; }
+        .edu-btn:hover { background-color: #8e44ad; color: white; }
+        .edu-btn:disabled { border-color: #95a5a6; color: #95a5a6; background-color: #ecf0f1; }
+
+        /* 출처 모달 팝업 스타일 */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 450px; text-align: left; max-height: 85vh; overflow-y: auto; }
+        .source-img { width: 100%; border-radius: 8px; margin: 15px 0; border: 1px solid #bdc3c7; }
+        
+        .back-nav {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+        }
+        
+        .back-nav a {
+            color: #ecf0f1;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1.2rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        
+        .back-nav a:hover {
+            color: #3498db;
+        }
+    </style>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+<div class="back-nav">
+    <a href="index.html">
+        <i data-lucide="arrow-left"></i> 대시보드로 복귀
+    </a>
+</div>
+
+<div id="sourceModal" class="modal">
+    <div class="modal-content">
+        <h2 style="margin-top:0; color:#2c3e50;">📊 데이터 출처 및 기준</h2>
+        
+        <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80" alt="통계 그래프 이미지" class="source-img">
+        
+        <p style="font-size: 0.95em; line-height: 1.6; color: #333;">
+            본 게임에 사용된 직업별 평균 연봉은 현실의 아비투스를 반영하기 위해 아래 국가 기관 통계를 바탕으로 재구성되었습니다.<br><br>
+            <b>1. 의사 (2.5억):</b> 보건복지부 '보건의료인력실태조사'<br>
+            <b>2. 변호사 (1.1억):</b> 국세청 전문직 사업자 소득 통계<br>
+            <b>3. 회계/세무사 (1억):</b> 한국고용정보원 및 금융감독원 공시<br>
+            <b>4. 변리사 (8천만):</b> 국세청 부가가치세 신고 기준<br>
+            <b>5. 교사/공무원 (5.5~6.5천):</b> 인사혁신처 기준소득월액<br>
+            <b>6. 일반 직장인 (4.5~5천):</b> 고용노동부 사업체노동력조사
+        </p>
+        <button onclick="closeSourceModal()" style="background-color: #34495e; margin-top: 15px;">닫기</button>
+    </div>
+</div>
+
+<div class="container">
+    
+    <div id="inventory-bar" class="inventory" style="display: none;">
+        현재 <span id="inv-team">1</span>조 | 
+        보유 자본: <span id="inv-wealth">0원</span> | 
+        친구 카드: <span id="inv-cards">0</span>장
+    </div>
+
+    <div id="step-setup" class="step active">
+        <h1>인생 게임: 아비투스</h1>
+        <p>게임에 참여할 총 조(팀)의 수를 입력하세요.</p>
+        <input type="number" id="input-total-teams" min="2" max="8" value="4">
+        <button onclick="startGame()">게임 시작하기</button>
+        <button onclick="openSourceModal()" style="background-color: #7f8c8d; margin-top: 20px;">📊 연봉 및 데이터 출처 보기</button>
+    </div>
+
+    <div id="step-start" class="step">
+        <h2 id="team-indicator">1조 시작하기</h2>
+        <p>1단계: 태어난 환경을 무작위로 결정합니다.</p>
+        <button onclick="nextStep('step-heritage')">부모 재산 및 형제 수 뽑기</button>
+    </div>
+
+    <div id="step-heritage" class="step">
+        <h2>태어난 환경 결과</h2>
+        <div id="heritage-result" style="font-size: 1.1em; line-height: 1.6; margin-bottom: 20px;"></div>
+        <button onclick="showEduOptions()">입시 사교육 결정하기</button>
+    </div>
+
+    <div id="step-edu" class="step">
+        <h2>입시 사교육 투자</h2>
+        <p style="font-size: 0.9em; color: #7f8c8d;">부모의 자본으로 1티어 명문대 합격 커트라인을 낮춥니다.<br>(돈이 부족하면 비싼 학원을 고를 수 없습니다)</p>
+        <div id="edu-options-container" style="display: flex; flex-direction: column;">
+            <button class="edu-btn" id="edu-3" onclick="selectEdu(300000000, 3)">VVIP 컨설팅 (비용: 3억 원)<br><span style="font-size: 0.8em; font-weight: normal;">정답 4,5,6개 ➔ 1티어 프리패스</span></button>
+            <button class="edu-btn" id="edu-2" onclick="selectEdu(200000000, 2)">명문 기숙학원 (비용: 2억 원)<br><span style="font-size: 0.8em; font-weight: normal;">정답 5,6개 ➔ 1티어 합격</span></button>
+            <button class="edu-btn" id="edu-1" onclick="selectEdu(100000000, 1)">유명 종합학원 (비용: 1억 원)<br><span style="font-size: 0.8em; font-weight: normal;">정답 6개(만점) ➔ 1티어 간신히 합격</span></button>
+            <button class="edu-btn" id="edu-0" onclick="selectEdu(0, 0)">독학 및 EBS (비용: 0원)<br><span style="font-size: 0.8em; font-weight: normal;">1티어 진학 절대 불가 (최대 2티어)</span></button>
+        </div>
+    </div>
+
+    <div id="step-suneung-quiz" class="step">
+        <h2>대학 수학 능력 시험</h2>
+        <p id="suneung-target-msg" style="font-size: 0.9em; color: #8e44ad; font-weight: bold;"></p>
+        <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 15px;">
+            <h3 id="suneung-quiz-question" style="margin-top: 0; line-height: 1.4; word-break: keep-all;">질문</h3>
+            <div id="suneung-quiz-options" style="display: flex; flex-direction: column;"></div>
+        </div>
+        <p id="suneung-quiz-progress" style="font-weight: bold; color: #2980b9;"></p>
+    </div>
+
+    <div id="step-suneung-result" class="step">
+        <h2>대학 입시 결과</h2>
+        <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 15px;">
+            <h2 id="suneung-score-result" style="margin: 10px 0; color: #34495e;"></h2>
+            <h1 id="univ-tier-title" style="color: #c0392b; font-size: 2em; margin: 10px 0;">계산 중...</h1>
+            <p id="univ-reward-desc" style="font-weight: bold;"></p>
+        </div>
+        <button onclick="startJobQuiz()">취업 준비 (면접 퀴즈) 시작</button>
+    </div>
+
+    <div id="step-job-quiz" class="step">
+        <h2>취업 면접 퀴즈</h2>
+        <p style="font-size: 0.9em; color: #7f8c8d;">정답 1개당 1,000만 원 보너스!<br>또한 점수는 '직업 선택 드래프트' 순위의 기준이 됩니다.</p>
+        <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 15px;">
+            <h3 id="job-quiz-question" style="margin-top: 0; line-height: 1.4; word-break: keep-all;">질문</h3>
+            <div id="job-quiz-options" style="display: flex; flex-direction: column;"></div>
+        </div>
+        <p id="job-quiz-progress" style="font-weight: bold; color: #27ae60;"></p>
+    </div>
+
+    <div id="step-draft-order" class="step">
+        <h2>직업 선택 드래프트 순위</h2>
+        <p style="font-size: 0.9em; color: #7f8c8d;">면접 점수순으로 정렬되었으며, 동점자는 운(주사위)으로 결정되었습니다.</p>
+        <div id="draft-list-container" style="text-align: left; margin-bottom: 20px;"></div>
+        <button onclick="startJobDraft()">1순위부터 직업 선택 시작하기</button>
+    </div>
+
+    <div id="step-job" class="step">
+        <h2 id="draft-turn-title">N순위 직업 선택</h2>
+        <p style="font-size: 0.9em;">앞 순위가 선점한 직업은 고를 수 없으며, 직업에 따라 재난을 방어할 수 있습니다.</p>
+        <div id="job-container" class="job-list"></div>
+    </div>
+
+    <div id="step-event" class="step">
+        <h2>인생의 위기</h2>
+        <p>선택한 삶의 궤적에 위기가 찾아왔습니다.</p>
+        <button id="btn-draw-event" onclick="drawEvent()">재난 카드 뽑기</button>
+        
+        <div id="event-display" style="display: none;">
+            <div id="event-card" class="event-card">이벤트 내용</div>
+            <p id="event-desc" style="font-weight: bold;"></p>
+            <div id="event-actions"></div>
+        </div>
+    </div>
+
+    <div id="step-result" class="step">
+        <h2 id="result-title">조 최종 자산 정산</h2>
+        <div id="result-details" style="text-align: left; margin-bottom: 20px; line-height: 1.6; background: white; padding: 15px; border-radius: 8px;"></div>
+        <button id="btn-next-draft" onclick="nextDraftTeam()">다음 순위 조 진행하기</button>
+    </div>
+
+    <div id="step-ranking" class="step">
+        <h2>모든 조 게임 종료: 최종 랭킹</h2>
+        <div id="ranking-list" style="margin-bottom: 20px; text-align: left;"></div>
+        <button onclick="location.reload()">게임 처음부터 다시 하기</button>
+    </div>
+
+</div>
+
+<script>
+    lucide.createIcons();
+
+    // 모달 제어 함수
+    function openSourceModal() {
+        document.getElementById('sourceModal').style.display = 'flex';
+    }
+    
+    function closeSourceModal() {
+        document.getElementById('sourceModal').style.display = 'none';
+    }
+
+    let totalTeams = 4;
+    let currentTeamPhase1 = 1;
+    let currentDraftIndex = 0; 
+    
+    let teamDataList = []; 
+    let currentData = {}; 
+    
+    const wealthArray = [10000000000, 5000000000, 3000000000, 1000000000, 500000000, 100000000, 50000000];
+    
+    const jobs = [
+        { name: "의사", salary: 250000000, taken: false },
+        { name: "변호사", salary: 110000000, taken: false },
+        { name: "회계/세무사", salary: 100000000, taken: false },
+        { name: "변리사", salary: 80000000, taken: false },
+        { name: "교사", salary: 65000000, taken: false },
+        { name: "공무원", salary: 55000000, taken: false },
+        { name: "마케터", salary: 50000000, taken: false },
+        { name: "디자이너", salary: 45000000, taken: false }
+    ];
+
+    const events = [
+        { name: "가족의 중병 (병원비)", penalty: 500000000, relatedJob: "의사" },
+        { name: "부당한 고소 (합의금 및 소송비)", penalty: 500000000, relatedJob: "변호사" },
+        { name: "세금 폭탄 및 투자 사기", penalty: 500000000, relatedJob: "회계/세무사" },
+        { name: "특허 분쟁 소송 (특허카드)", penalty: 300000000, relatedJob: "변리사" },
+        { name: "자녀 사교육 및 유학 (교육비)", penalty: 500000000, relatedJob: "교사" }
+    ];
+
+    const suneungQuizQuestions = [
+        { q: "대한민국 헌법 제1조 1항, '대한민국은 ( )이다.' 빈칸에 알맞은 말은?", options: ["민주공화국", "입헌군주국", "자본주의국가", "복지국가"], answer: 0 },
+        { q: "달리기 경주에서 2등을 추월했습니다. 당신은 현재 몇 등인가요?", options: ["1등", "2등", "3등", "알 수 없음"], answer: 1 },
+        { q: "다음 중 태양계 행성 분류에서 제외되어 왜소행성으로 강등된 것은?", options: ["천왕성", "해왕성", "명왕성", "토성"], answer: 2 },
+        { q: "세계에서 가장 넓은 면적을 가진 나라는 어디일까요?", options: ["미국", "중국", "캐나다", "러시아"], answer: 3 },
+        { q: "이 게임의 핵심 주제인 '아비투스(Habitus)' 개념을 정립한 프랑스의 사회학자는?", options: ["칼 마르크스", "피에르 부르디외", "막스 베버", "오귀스트 콩트"], answer: 1 },
+        { q: "어떤 달에는 30일이 있고, 어떤 달에는 31일이 있습니다. 그렇다면 28일이 있는 달은 1년에 몇 번 있을까요?", options: ["1번", "4번", "6번", "12번"], answer: 3 }
+    ];
+    let suneungQuizIndex = 0;
+    let suneungQuizScore = 0;
+
+    const jobQuizQuestions = [
+        { q: "물가가 지속적으로 하락하여 경제 활동이 침체되는 현상을 무엇이라고 합니까?", options: ["인플레이션", "스태그플레이션", "디플레이션", "리세션"], answer: 2 },
+        { q: "직장 상사나 외부 손님에게 명함을 건넬 때 올바른 예절은?", options: ["명함에 글씨를 쓰면서 건넨다", "아랫사람이 윗사람에게 먼저 건넨다", "한 손으로 가볍게 건넨다", "상대방이 읽기 불편한 방향으로 건넨다"], answer: 1 },
+        { q: "2024년 기준, 대한민국의 법정 1주 기본 근로시간은 몇 시간입니까? (연장근로 제외)", options: ["35시간", "40시간", "45시간", "52시간"], answer: 1 },
+        { q: "회사의 재무 상태를 파악하기 위해 '자산, 부채, 자본'을 나타내는 재무제표의 이름은?", options: ["손익계산서", "현금흐름표", "재무상태표(대차대조표)", "자본변동표"], answer: 2 },
+        { q: "A씨는 10층 아파트에 삽니다. 비가 오는 날에만 엘리베이터를 10층까지 타고, 맑은 날에는 7층까지만 탄 뒤 걸어 올라갑니다. 왜 그럴까요?", options: ["운동을 하려고", "7층에 친구가 살아서", "엘리베이터 고장이 잦아서", "키가 작아 10층 버튼에 손이 안 닿아서 (우산으로 누름)"], answer: 3 }
+    ];
+    let jobQuizIndex = 0;
+    let jobQuizScore = 0;
+
+    function formatMoney(amount) {
+        if (amount <= 0) return "0원";
+        let eok = Math.floor(amount / 100000000);
+        let man = Math.floor((amount % 100000000) / 10000);
+        let res = "";
+        if (eok > 0) res += eok + "억 ";
+        if (man > 0) res += man + "만 ";
+        return res.trim() + "원";
+    }
+
+    function initTeamData(teamNum) {
+        return {
+            team: teamNum,
+            initialWealth: 0,
+            currentWealth: 0,
+            eduLevel: 0,
+            univMultiplier: 1,
+            friendCards: 0,
+            univTierText: '',
+            jobQuizScore: 0,
+            diceRoll: 0, 
+            jobName: '',
+            jobSalary: 0,
+            eventName: '',
+            eventPenalty: 0,
+            isDiscounted: false,
+            finalWealth: 0
+        };
+    }
+
+    function updateInventory() {
+        document.getElementById('inv-team').innerText = currentData.team;
+        document.getElementById('inv-wealth').innerText = formatMoney(currentData.currentWealth);
+        document.getElementById('inv-cards').innerText = currentData.friendCards;
+        document.getElementById('inventory-bar').style.display = 'block';
+    }
+
+    function hideInventory() {
+        document.getElementById('inventory-bar').style.display = 'none';
+    }
+
+    function showStep(stepId) {
+        document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
+        document.getElementById(stepId).classList.add('active');
+    }
+
+    function startGame() {
+        const input = parseInt(document.getElementById('input-total-teams').value);
+        if(isNaN(input) || input < 2) {
+            alert("조의 수는 최소 2개 이상이어야 합니다.");
+            return;
+        }
+        totalTeams = input;
+        currentTeamPhase1 = 1;
+        startPhase1Team(currentTeamPhase1);
+    }
+
+    function startPhase1Team(teamNum) {
+        currentData = initTeamData(teamNum);
+        document.getElementById('team-indicator').innerText = `${teamNum}조 차례입니다`;
+        updateInventory();
+        showStep('step-start');
+    }
+
+    function nextStep(stepId) {
+        if (stepId === 'step-heritage') rollHeritage();
+        showStep(stepId);
+    }
+
+    function rollHeritage() {
+        const parentWealth = wealthArray[Math.floor(Math.random() * wealthArray.length)];
+        const siblings = Math.floor(Math.random() * 6) + 1;
+        currentData.initialWealth = Math.floor(parentWealth / siblings);
+        currentData.currentWealth = currentData.initialWealth;
+
+        document.getElementById('heritage-result').innerHTML = 
+            `부모 재산: <b>${formatMoney(parentWealth)}</b><br>` +
+            `형제자매 수: <b>${siblings}명</b> (본인 포함)<br><br>` +
+            `내게 주어진 초기 자본: <br><b style="color:#2980b9; font-size:1.3em;">${formatMoney(currentData.initialWealth)}</b>`;
+        
+        updateInventory();
+    }
+
+    function showEduOptions() {
+        document.getElementById('edu-3').disabled = (currentData.currentWealth < 300000000);
+        document.getElementById('edu-2').disabled = (currentData.currentWealth < 200000000);
+        document.getElementById('edu-1').disabled = (currentData.currentWealth < 100000000);
+        showStep('step-edu');
+    }
+
+    function selectEdu(cost, eduLevel) {
+        currentData.currentWealth -= cost;
+        currentData.eduLevel = eduLevel;
+        updateInventory();
+        
+        let targetMsg = "";
+        if (eduLevel === 3) targetMsg = "[VVIP 적용] 6문제 중 4문제만 맞춰도 1티어 확정!";
+        else if (eduLevel === 2) targetMsg = "[명문기숙 적용] 6문제 중 5문제만 맞춰도 1티어 확정!";
+        else if (eduLevel === 1) targetMsg = "[종합학원 적용] 6문제 모두 맞춰야 1티어 합격 가능!";
+        else targetMsg = "[독학] 1티어 불가. 6문제를 다 맞추면 2티어 합격!";
+        
+        document.getElementById('suneung-target-msg').innerText = targetMsg;
+        
+        suneungQuizIndex = 0;
+        suneungQuizScore = 0;
+        showStep('step-suneung-quiz');
+        renderSuneungQuiz();
+    }
+
+    function renderSuneungQuiz() {
+        if (suneungQuizIndex >= suneungQuizQuestions.length) {
+            finishSuneungQuiz();
+            return;
+        }
+        const qData = suneungQuizQuestions[suneungQuizIndex];
+        document.getElementById('suneung-quiz-question').innerText = `Q${suneungQuizIndex + 1}. ${qData.q}`;
+        document.getElementById('suneung-quiz-progress').innerText = `진행: ${suneungQuizIndex + 1} / 6 문항`;
+        
+        const optionsContainer = document.getElementById('suneung-quiz-options');
+        optionsContainer.innerHTML = '';
+        
+        qData.options.forEach((opt, idx) => {
+            const btn = document.createElement('button');
+            btn.className = 'quiz-option';
+            btn.innerText = opt;
+            btn.onclick = () => {
+                if (idx === qData.answer) suneungQuizScore++;
+                suneungQuizIndex++;
+                renderSuneungQuiz();
+            };
+            optionsContainer.appendChild(btn);
+        });
+    }
+
+    function finishSuneungQuiz() {
+        let tier = 4;
+        const score = suneungQuizScore;
+        const edu = currentData.eduLevel;
+
+        if (edu === 3) {
+            if (score >= 4) tier = 1; else if (score >= 2) tier = 2; else if (score >= 1) tier = 3; else tier = 4;
+        } else if (edu === 2) {
+            if (score >= 5) tier = 1; else if (score >= 3) tier = 2; else if (score >= 2) tier = 3; else tier = 4;
+        } else if (edu === 1) {
+            if (score === 6) tier = 1; else if (score >= 4) tier = 2; else if (score >= 2) tier = 3; else tier = 4;
+        } else {
+            if (score === 6) tier = 2; else if (score >= 4) tier = 3; else tier = 4;
+        }
+
+        if (tier === 1) { 
+            currentData.univMultiplier = 1.5; currentData.friendCards = 3; currentData.univTierText = "티어 1 명문대"; 
+        } else if (tier === 2) { 
+            currentData.univMultiplier = 1.3; currentData.friendCards = 2; currentData.univTierText = "티어 2 수도권대"; 
+        } else if (tier === 3) { 
+            currentData.univMultiplier = 1.1; currentData.friendCards = 1; currentData.univTierText = "티어 3 지거국"; 
+        } else { 
+            currentData.univMultiplier = 1.0; currentData.friendCards = 0; currentData.univTierText = "티어 4 지방대"; 
+        }  
+
+        document.getElementById('suneung-score-result').innerText = `성적: 6문제 중 ${score}개 정답`;
+        document.getElementById('univ-tier-title').innerText = `${currentData.univTierText} 진학!`;
+        document.getElementById('univ-reward-desc').innerText = `연봉 가중치 ${currentData.univMultiplier}배 / 인맥 카드 ${currentData.friendCards}장 획득`;
+        
+        updateInventory();
+        showStep('step-suneung-result');
+    }
+
+    function startJobQuiz() {
+        jobQuizIndex = 0;
+        jobQuizScore = 0;
+        showStep('step-job-quiz');
+        renderJobQuiz();
+    }
+
+    function renderJobQuiz() {
+        if (jobQuizIndex >= jobQuizQuestions.length) {
+            finishJobQuiz();
+            return;
+        }
+        const qData = jobQuizQuestions[jobQuizIndex];
+        document.getElementById('job-quiz-question').innerText = `Q${jobQuizIndex + 1}. ${qData.q}`;
+        document.getElementById('job-quiz-progress').innerText = `진행: ${jobQuizIndex + 1} / 5 문항`;
+        
+        const optionsContainer = document.getElementById('job-quiz-options');
+        optionsContainer.innerHTML = '';
+        
+        qData.options.forEach((opt, idx) => {
+            const btn = document.createElement('button');
+            btn.className = 'quiz-option';
+            btn.innerText = opt;
+            btn.onclick = () => {
+                if (idx === qData.answer) jobQuizScore++;
+                jobQuizIndex++;
+                renderJobQuiz();
+            };
+            optionsContainer.appendChild(btn);
+        });
+    }
+
+    function finishJobQuiz() {
+        currentData.jobQuizScore = jobQuizScore;
+        const bonusMoney = jobQuizScore * 10000000;
+        currentData.currentWealth += bonusMoney;
+        
+        alert(`[취업 퀴즈 완료] ${jobQuizScore}문제 정답!\n축하금 ${formatMoney(bonusMoney)} 확보. 드래프트 준비를 마쳤습니다.`);
+        
+        teamDataList.push(currentData);
+        hideInventory();
+
+        if (currentTeamPhase1 < totalTeams) {
+            currentTeamPhase1++;
+            startPhase1Team(currentTeamPhase1);
+        } else {
+            generateDraftOrder();
+        }
+    }
+
+    function generateDraftOrder() {
+        teamDataList.forEach(t => {
+            t.diceRoll = Math.floor(Math.random() * 6) + 1;
+            t.hiddenTiebreaker = Math.random();
+        });
+
+        teamDataList.sort((a, b) => {
+            if (b.jobQuizScore !== a.jobQuizScore) return b.jobQuizScore - a.jobQuizScore;
+            if (b.diceRoll !== a.diceRoll) return b.diceRoll - a.diceRoll;
+            return b.hiddenTiebreaker - a.hiddenTiebreaker;
+        });
+
+        const draftDiv = document.getElementById('draft-list-container');
+        draftDiv.innerHTML = '';
+        teamDataList.forEach((t, index) => {
+            let color = index === 0 ? '#f1c40f' : 'transparent';
+            draftDiv.innerHTML += `
+                <div class="ranking-item" style="border-left-color: ${index === 0 ? color : '#bdc3c7'};">
+                    <span><b>${index + 1}순위: ${t.team}조</b> (면접 ${t.jobQuizScore}점)</span>
+                    <span style="color: #8e44ad; font-size: 0.9em;">보정 주사위: ${t.diceRoll}</span>
+                </div>
+            `;
+        });
+
+        showStep('step-draft-order');
+    }
+
+    function startJobDraft() {
+        currentData = teamDataList[currentDraftIndex];
+        document.getElementById('draft-turn-title').innerText = `[${currentDraftIndex + 1}순위] ${currentData.team}조 직업 선택`;
+        updateInventory();
+        renderJobs();
+        showStep('step-job');
+    }
+
+    function renderJobs() {
+        const container = document.getElementById('job-container');
+        container.innerHTML = '';
+        jobs.forEach((job, index) => {
+            const btn = document.createElement('button');
+            btn.className = 'job-btn';
+            btn.innerText = `${job.name} (연봉 ${formatMoney(job.salary)})`;
+            btn.disabled = job.taken;
+            btn.onclick = () => selectJob(index);
+            container.appendChild(btn);
+        });
+    }
+
+    function selectJob(index) {
+        jobs[index].taken = true;
+        currentData.jobName = jobs[index].name;
+        currentData.jobSalary = jobs[index].salary;
+        
+        document.getElementById('btn-draw-event').style.display = 'block';
+        document.getElementById('event-display').style.display = 'none';
+        
+        showStep('step-event');
+    }
+
+    function drawEvent() {
+        document.getElementById('btn-draw-event').style.display = 'none';
+        
+        const randomEvent = events[Math.floor(Math.random() * events.length)];
+        currentData.eventName = randomEvent.name;
+        
+        document.getElementById('event-card').innerText = `${randomEvent.name} 발생!\n청구서: ${formatMoney(randomEvent.penalty)}`;
+        document.getElementById('event-display').style.display = 'block';
+
+        const actionsDiv = document.getElementById('event-actions');
+        actionsDiv.innerHTML = '';
+
+        if (currentData.jobName === randomEvent.relatedJob) {
+            document.getElementById('event-desc').innerText = `전문 지식을 활용해 위기를 가볍게 넘깁니다! (비용 50% 감소)`;
+            const btn = document.createElement('button');
+            btn.innerText = "전문성으로 방어하기";
+            btn.onclick = () => applyPenalty(randomEvent.penalty, true);
+            actionsDiv.appendChild(btn);
+        } 
+        else if (currentData.friendCards > 0) {
+            document.getElementById('event-desc').innerText = `인맥이 있습니다! 대학에서 사귄 ${randomEvent.relatedJob} 친구에게 연락합니다.`;
+            
+            const btnUseFriend = document.createElement('button');
+            btnUseFriend.className = 'btn-friend';
+            btnUseFriend.innerText = "친구 카드 1장 사용 (비용 50% 감소)";
+            btnUseFriend.onclick = () => {
+                currentData.friendCards--;
+                updateInventory();
+                applyPenalty(randomEvent.penalty, true);
+            };
+            
+            const btnNoFriend = document.createElement('button');
+            btnNoFriend.className = 'btn-danger';
+            btnNoFriend.innerText = "도움 요청 안 함 (전액 지불)";
+            btnNoFriend.onclick = () => applyPenalty(randomEvent.penalty, false);
+
+            actionsDiv.appendChild(btnUseFriend);
+            actionsDiv.appendChild(btnNoFriend);
+        } 
+        else {
+            document.getElementById('event-desc').innerText = "전문 지식도, 인맥 카드도 없습니다. 뼈아픈 타격을 입습니다.";
+            const btn = document.createElement('button');
+            btn.className = 'btn-danger';
+            btn.innerText = "청구서 전액 지불하기";
+            btn.onclick = () => applyPenalty(randomEvent.penalty, false);
+            actionsDiv.appendChild(btn);
+        }
+    }
+
+    function applyPenalty(basePenalty, isDiscounted) {
+        currentData.isDiscounted = isDiscounted;
+        currentData.eventPenalty = isDiscounted ? basePenalty / 2 : basePenalty;
+        calculateFinal();
+    }
+
+    function calculateFinal() {
+        const savedWealth = Math.floor((currentData.jobSalary * currentData.univMultiplier * (1/3)) * 30);
+        
+        currentData.finalWealth = Math.max(0, currentData.currentWealth + savedWealth - currentData.eventPenalty);
+
+        document.getElementById('result-title').innerText = `${currentData.team}조 정산 완료`;
+        document.getElementById('result-details').innerHTML = `
+            <b>[시작]</b> 부모 자본 잔액(사교육비 제외) 및 축하금: ${formatMoney(currentData.currentWealth)}<br>
+            <b>[학벌]</b> ${currentData.univTierText} (남은 인맥: ${currentData.friendCards}장)<br>
+            <b>[직업]</b> ${currentData.jobName} (연봉 1/3 저축 30년: ${formatMoney(savedWealth)})<br>
+            <b>[시련]</b> ${currentData.eventName} (-${formatMoney(currentData.eventPenalty)}) ${currentData.isDiscounted ? '(방어 성공)' : '(방어 실패)'}<br><br>
+            <div style="font-size: 1.3em; color: #c0392b; text-align: center;">
+                <b>최종 자산: ${formatMoney(currentData.finalWealth)}</b>
+            </div>
+        `;
+        
+        hideInventory();
+        
+        if (currentDraftIndex + 1 < totalTeams) {
+            document.getElementById('btn-next-draft').innerText = `다음 순위 조 (${teamDataList[currentDraftIndex + 1].team}조) 직업 선택하기`;
+            document.getElementById('btn-next-draft').onclick = nextDraftTeam;
+        } else {
+            document.getElementById('btn-next-draft').innerText = "모든 조 정산 완료! 최종 랭킹 보기";
+            document.getElementById('btn-next-draft').onclick = showFinalRanking;
+        }
+        
+        showStep('step-result');
+    }
+
+    function nextDraftTeam() {
+        currentDraftIndex++;
+        startJobDraft();
+    }
+
+    function showFinalRanking() {
+        teamDataList.sort((a, b) => b.finalWealth - a.finalWealth);
+        
+        const rankingDiv = document.getElementById('ranking-list');
+        rankingDiv.innerHTML = '';
+        
+        teamDataList.forEach((result, index) => {
+            let color = index === 0 ? '#f1c40f' : (index === 1 ? '#bdc3c7' : (index === 2 ? '#cd7f32' : 'white'));
+            
+            let eduStr = "";
+            if(result.eduLevel===3) eduStr="VVIP";
+            else if(result.eduLevel===2) eduStr="명문기숙";
+            else if(result.eduLevel===1) eduStr="종합학원";
+            else eduStr="독학";
+
+            rankingDiv.innerHTML += `
+                <div class="ranking-item" style="background-color: ${index < 3 ? '#f9f9f9' : 'white'}; border-left-color: ${color};">
+                    <span>${index + 1}위: ${result.team}조 (${result.jobName})<br>
+                    <span style="font-size:0.8em; color:#7f8c8d; font-weight:normal;">[${eduStr}] ${result.univTierText} 출신</span>
+                    </span>
+                    <span style="color: #c0392b;">${formatMoney(result.finalWealth)}</span>
+                </div>
+            `;
+        });
+        
+        showStep('step-ranking');
+    }
+</script>
+
+</body>
+</html>

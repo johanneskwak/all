@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>알렉산드로스 모의재판 | 직업 체험 퀘스트</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: 'Pretendard', sans-serif; background-color: #0f172a; }
+        .bg-pattern { background-image: radial-gradient(circle at 15% 50%, rgba(99, 102, 241, 0.15), transparent 25%), radial-gradient(circle at 85% 30%, rgba(236, 72, 153, 0.15), transparent 25%); background-attachment: fixed; }
+        @keyframes bounce-slow {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10%); }
+        }
+    </style>
+</head>
+<body class="bg-pattern min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- [데이터 정의] ---
+        const MISSIONS = [
+          {
+            id: 'm1',
+            cityName: '아테네',
+            position: 'top-1/4 left-1/4',
+            quiz: { question: "Q. 스파르타는 소수의 시민이 다수의 피지배층을 다스리기 위해 강력한 군사 훈련(아고게)을 실시했다.", answer: "O", explanation: "스파르타는 펠로폰네소스 반도를 정복하고 강력한 군국주의 통치를 펼쳤습니다." },
+            card: { id: 10, title: "단서 #10", name: "그리스 도시 해방", type: "유리", desc: "알렉산드로스는 소아시아 원정 초기, 그리스 도시들을 해방시키고 민주정을 복원했습니다." }
+          },
+          {
+            id: 'm2',
+            cityName: '페르세폴리스',
+            position: 'top-1/3 left-1/2',
+            quiz: { question: "Q. 아케메네스 왕조 페르시아의 키루스 2세는 피정복민의 종교와 관습을 탄압하는 가혹한 통치를 했다.", answer: "X", explanation: "키루스 2세는 '키루스 원통'에 기록된 것처럼 피정복민을 존중하는 관용 정책을 펼쳤습니다." },
+            card: { id: 7, title: "단서 #7", name: "페르세폴리스 방화", type: "불리", desc: "기원전 330년, 알렉산드로스의 군대는 페르시아 수도 페르세폴리스를 불태워 문화 파괴를 일으켰습니다." }
+          },
+          {
+            id: 'm3',
+            cityName: '알렉산드리아',
+            position: 'top-1/2 left-1/3',
+            quiz: { question: "Q. 피라미드와 스핑크스는 티그리스강과 유프라테스강 유역에서 발생한 메소포타미아 문명의 유물이다.", answer: "X", explanation: "피라미드와 스핑크스는 나일강 유역에서 발생한 고대 이집트 문명의 대표적 유물입니다." },
+            card: { id: 2, title: "단서 #2", name: "알렉산드리아 건설", type: "유리", desc: "정복지 곳곳에 약 70여 개의 도시를 세웠으며, 이집트 알렉산드리아는 고대 최대 학문 중심지가 되었습니다." }
+          },
+          {
+            id: 'm4',
+            cityName: '로마',
+            position: 'top-1/4 left-1/6',
+            quiz: { question: "Q. 로마 공화정 시대에 평민의 권리를 보호하기 위해 설치된 관직은 '호민관'이다.", answer: "O", explanation: "호민관은 평민회를 대표하며 원로원이나 집정관의 결정에 거부권을 행사할 수 있었습니다." },
+            card: { id: 9, title: "단서 #9", name: "키루스왕 무덤 보호", type: "유리", desc: "아케메네스 왕조 창시자 키루스 대왕의 훼손된 무덤을 복원하도록 명령하여 적국 왕을 예우했습니다." }
+          },
+          {
+            id: 'm5',
+            cityName: '악티움',
+            position: 'top-1/3 left-1/5',
+            quiz: { question: "Q. 옥타비아누스는 내전을 종식시키고 로마의 초대 황제가 되어 '아우구스투스(존엄한 자)'라는 칭호를 받았다.", answer: "O", explanation: "아우구스투스 칭호 획득과 함께 로마는 실질적인 제정(로마의 평화, 팍스 로마나) 시대로 접어들었습니다." },
+            card: { id: 6, title: "단서 #6", name: "헬레니즘 문화 탄생", type: "유리", desc: "그리스 문화와 오리엔트 문화가 융합된 헬레니즘 문화가 형성되어 로마, 이슬람 문명 등에 영향을 주었습니다." }
+          },
+          {
+            id: 'm6',
+            cityName: '바빌론',
+            position: 'top-1/2 left-1/2',
+            quiz: { question: "Q. 함무라비 법전은 '눈에는 눈, 이에는 이'라는 보복주의 원칙을 가졌으나, 신분에 따라 처벌이 다르게 적용되었다.", answer: "O", explanation: "함무라비 법전은 동태복수법을 원칙으로 했으나 귀족, 평민, 노예 등 신분에 따라 형벌에 차등을 두었습니다." },
+            card: { id: 3, title: "단서 #3", name: "바빌론 음주 과음", type: "불리", desc: "말년에 과도한 음주로 건강이 악화되었고, 33세의 젊은 나이에 바빌론에서 사망했습니다." }
+          }
+        ];
+
+        function MockTrialGame() {
+          const [phase, setPhase] = useState('MAP'); 
+          const [inventory, setInventory] = useState([]);
+          const [selectedMission, setSelectedMission] = useState(null);
+          const [quizResult, setQuizResult] = useState(null); 
+          const [showImageModal, setShowImageModal] = useState(false); // 단서 이미지 모달 볼지 여부
+          
+          // --- [HP 상태 관리] ---
+          const MAX_HP = 3;
+          const [playerHp, setPlayerHp] = useState(MAX_HP);
+          const [isGameOver, setIsGameOver] = useState(false);
+
+          // --- [재판 라운드 관리] ---
+          const [trialRound, setTrialRound] = useState(1);
+          const [trialMessage, setTrialMessage] = useState("검사: 피고인 알렉산드로스는 무자비한 파괴자입니다! 페르시아의 찬란한 문화를 잿더미로 만들었죠! (어떤 단서로 반박하시겠습니까?)");
+
+          const handleAnswer = (answer) => {
+            if (answer === selectedMission.quiz.answer) {
+              setQuizResult('CORRECT');
+              if (!inventory.find(card => card.id === selectedMission.card.id)) {
+                setInventory([...inventory, selectedMission.card]);
+              }
+            } else {
+              setQuizResult('WRONG');
+            }
+          };
+
+          const closeQuiz = () => {
+            setSelectedMission(null);
+            setQuizResult(null);
+            // 6개의 도시를 모두 탐색했으면 (카드 6장) 자동으로 이동
+            if (inventory.length === 5) { 
+              setPhase('TRIAL');
+            }
+          };
+
+          // --- [모의재판 카드 제출 로직 (총 4라운드)] ---
+          const handleSubmitCard = (card) => {
+            if (isGameOver || trialRound > 4) return;
+
+            let isCorrect = false;
+
+            // 각 라운드별 정답 카드 매칭
+            if (trialRound === 1 && card.id === 9) isCorrect = true;        // 무덤 보호
+            else if (trialRound === 2 && card.id === 10) isCorrect = true;  // 도시 해방
+            else if (trialRound === 3 && card.id === 2) isCorrect = true;   // 알렉산드리아 건설
+            else if (trialRound === 4 && card.id === 6) isCorrect = true;   // 헬레니즘 문화
+
+            if (isCorrect) {
+              if (trialRound === 1) {
+                setTrialMessage("이의 있음! 피고인은 키루스왕의 무덤을 보호하며 적국의 문화를 예우했습니다!");
+                setTimeout(() => {
+                  setTrialRound(2);
+                  setTrialMessage("검사: 크읏...! 하지만 그는 정복지의 시민들을 억압하는 무자비한 폭군이었을 뿐입니다!");
+                }, 3500);
+              } else if (trialRound === 2) {
+                setTrialMessage("이의 있음! 피고인은 페르시아 지배 하의 그리스 도시들을 해방시키고 민주정을 복원했습니다!");
+                setTimeout(() => {
+                  setTrialRound(3);
+                  setTrialMessage("검사: 바, 말도 안 돼! 그렇다 해도 그의 원정은 맹목적인 살육전이었고, 남긴 것은 황폐해진 영토뿐입니다!");
+                }, 3500);
+              } else if (trialRound === 3) {
+                setTrialMessage("이의 있음! 피고인은 정복지 곳곳에 알렉산드리아를 건설하여 세계적인 학문의 중심지로 만들었습니다!");
+                setTimeout(() => {
+                  setTrialRound(4);
+                  setTrialMessage("검사: 으윽...! 도, 도시는 세웠을지언정! 일방적인 마케도니아 제국주의로 고유 문화를 말살했을 뿐입니다!");
+                }, 3500);
+              } else if (trialRound === 4) {
+                setTrialMessage("이의 있음! 피고인은 그리스와 오리엔트 문화를 융합한 위대한 '헬레니즘 문화'를 탄생시켰습니다!");
+                setTimeout(() => {
+                  setTrialMessage("재판장: 검사 측은 더 이상 반박하지 못하는군요. 배심원단, 피고인에게 무죄를 선고합니다! (🎉 게임 완벽 클리어!)");
+                  setTrialRound(5); // 게임 클리어 상태
+                }, 3500);
+              }
+            } else {
+              // 오답 시 체력 감소
+              const newHp = playerHp - 1;
+              setPlayerHp(newHp);
+              
+              if (newHp <= 0) {
+                setIsGameOver(true);
+                setTrialMessage("재판장: 변호인의 억지 주장을 더 이상 들을 수 없습니다! 피고인에게 유죄를 선고합니다! (💀 GAME OVER)");
+              } else {
+                setTrialMessage(`재판장: 논리에 맞지 않는 단서입니다! 페널티를 부여합니다. (남은 기회: ${newHp}번)`);
+              }
+            }
+          };
+
+          return (
+            <div className="w-full max-w-5xl mx-auto p-4 md:p-8 font-sans">
+              <div className="mb-4">
+                 <button onClick={() => window.location.href='index.html'} className="text-indigo-400 hover:text-indigo-300 font-bold flex items-center gap-2">⬅️ 메인 대시보드로 복귀</button>
+              </div>
+              <header className="mb-6 flex flex-col md:flex-row md:justify-between md:items-center bg-indigo-900 border border-indigo-700 text-white p-4 md:p-6 rounded-xl shadow-xl gap-4">
+                <div className="flex items-center gap-3">
+                  <span className="text-3xl">🏛️</span>
+                  <div>
+                    <h1 className="text-2xl font-black tracking-tight text-white mb-1">알렉산드로스 모의재판</h1>
+                    <p className="text-indigo-200 text-sm">과연 그는 폭군인가 영웅인가? 단서를 모아 변호하세요.</p>
+                  </div>
+                </div>
+                
+                <div className="flex flex-wrap items-center gap-4">
+                  <button 
+                    onClick={() => setShowImageModal(true)}
+                    className="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg font-bold shadow transition-colors text-sm flex items-center gap-2"
+                  >
+                    📜 단서 이미지 원본 보기
+                  </button>
+                  <div className="text-base font-bold bg-indigo-800 px-4 py-2 rounded-lg border border-indigo-600 shadow-inner">
+                    단서 수집: <span className="text-yellow-400 ml-1">{inventory.length}</span> / 6
+                  </div>
+                  <div className="flex items-center gap-2 bg-gray-900 px-4 py-2 rounded-full border border-gray-700 shadow-inner">
+                    <span className="font-black text-sm text-gray-400 tracking-wider">HP</span>
+                    <div className="flex gap-1">
+                      {[...Array(MAX_HP)].map((_, i) => (
+                        <span key={i} className={`text-xl transition-all duration-300 ${i < playerHp ? 'opacity-100 scale-100' : 'opacity-20 grayscale scale-75'}`}>
+                          ❤️
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </header>
+
+              {/* --- [단서 원본 이미지 모달] --- */}
+              {showImageModal && (
+                <div className="fixed inset-0 bg-black/80 flex flex-col items-center justify-center z-[100] p-4 backdrop-blur-sm">
+                  <div className="flex justify-end w-full max-w-4xl mb-4">
+                    <button 
+                      onClick={() => setShowImageModal(false)}
+                      className="text-white text-xl font-bold bg-white/20 hover:bg-white/30 rounded-full w-12 h-12 flex items-center justify-center transition"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <img 
+                    src="../../brain/2205e683-13ae-4204-902d-b947379e1314/media__1773532901231.jpg" 
+                    alt="크라임씬 단서 원본" 
+                    className="max-h-[85vh] max-w-full rounded-lg shadow-2xl border-4 border-white/10"
+                  />
+                </div>
+              )}
+
+              {/* --- [지도 탐험 페이즈] --- */}
+              {phase === 'MAP' && (
+                <div className="relative w-full h-[500px] md:h-[600px] bg-amber-50 border-4 border-amber-900/40 rounded-xl shadow-2xl overflow-hidden ring-4 ring-amber-900/20 mt-4">
+                  <div className="absolute inset-0 opacity-40 bg-[url('https://www.transparenttextures.com/patterns/old-map.png')] mix-blend-multiply"></div>
+                  
+                  {/* 지도 배경 꾸미기 */}
+                  <div className="absolute bottom-10 left-10 opacity-20 transform -rotate-12 pointer-events-none">
+                     <span className="text-8xl">🧭</span>
+                  </div>
+
+                  <div className="absolute top-6 left-6 z-10 bg-white/90 backdrop-blur px-6 py-3 rounded-xl border-2 border-amber-900/30 shadow-lg">
+                     <h2 className="text-xl font-black text-amber-900 flex items-center gap-2">🌍 고대 세계 지도 <span className="text-sm font-normal text-amber-800 ml-2">(단서가 있는 도시를 클릭하세요)</span></h2>
+                  </div>
+                  
+                  {MISSIONS.map((mission) => {
+                    const isCleared = inventory.some(card => card.id === mission.card.id);
+                    return (
+                      <button
+                        key={mission.id}
+                        onClick={() => !isCleared && setSelectedMission(mission)}
+                        className={`absolute ${mission.position} w-20 h-20 md:w-24 md:h-24 rounded-full flex flex-col items-center justify-center font-bold text-white shadow-xl transition-all duration-300 hover:scale-110 z-20 focus:outline-none focus:ring-4 focus:ring-amber-400
+                          ${isCleared ? 'bg-slate-500 shadow-inner' : 'bg-rose-600 hover:bg-rose-500 animate-[bounce-slow_3s_ease-in-out_infinite] border-2 border-white/30'}`}
+                      >
+                        <span className="text-2xl mb-1">{isCleared ? '✔️' : '📍'}</span>
+                        <span className="text-sm font-black tracking-wide drop-shadow-md">{mission.cityName}</span>
+                      </button>
+                    );
+                  })}
+
+                  <div className="absolute bottom-6 left-6 z-20">
+                     <div className="bg-white/80 backdrop-blur text-amber-900 text-sm font-bold px-4 py-2 rounded-lg border border-amber-900/20 shadow">💡 미니 퀴즈를 맞히고 재판을 위한 증거 카드를 모으세요!</div>
+                  </div>
+
+                  {inventory.length > 0 && (
+                    <button 
+                      onClick={() => setPhase('TRIAL')}
+                      className="absolute bottom-6 right-6 bg-indigo-600 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-[0_0_20px_rgba(79,70,229,0.5)] hover:bg-indigo-500 transition-all hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(79,70,229,0.7)] z-20 flex items-center gap-2"
+                    >
+                      재판장으로 이동하기 <span className="text-2xl">➡️</span>
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* --- [미니게임 모달] --- */}
+              {selectedMission && phase === 'MAP' && (
+                <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                  <div className="bg-white p-6 md:p-10 rounded-2xl max-w-lg w-full shadow-2xl flex flex-col items-center text-center">
+                    <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-3xl mb-4 shadow-inner">📍</div>
+                    <h3 className="text-2xl md:text-3xl font-black mb-6 text-slate-800 border-b pb-4 w-full">{selectedMission.cityName} 탐색</h3>
+                    <p className="text-lg md:text-xl mb-8 font-semibold text-slate-700 leading-relaxed bg-slate-50 p-6 rounded-xl border w-full text-left">{selectedMission.quiz.question}</p>
+                    
+                    {!quizResult && (
+                      <div className="flex gap-4 md:gap-6 mb-4 w-full">
+                        <button onClick={() => handleAnswer('O')} className="flex-1 bg-blue-500 text-white text-4xl pb-1 h-20 rounded-xl hover:bg-blue-400 hover:-translate-y-1 transition-all font-black shadow-[0_5px_0_#2563eb] active:shadow-[0_0px_0_#2563eb] active:translate-y-1">O</button>
+                        <button onClick={() => handleAnswer('X')} className="flex-1 bg-rose-500 text-white text-4xl pb-1 h-20 rounded-xl hover:bg-rose-400 hover:-translate-y-1 transition-all font-black shadow-[0_5px_0_#e11d48] active:shadow-[0_0px_0_#e11d48] active:translate-y-1">X</button>
+                      </div>
+                    )}
+
+                    {quizResult === 'CORRECT' && (
+                      <div className="bg-emerald-50 w-full p-6 rounded-xl mb-6 border border-emerald-200">
+                        <div className="flex items-center justify-center gap-2 mb-3">
+                            <span className="text-2xl animate-bounce">🎉</span>
+                            <p className="text-emerald-700 font-black text-xl">정답입니다!</p>
+                        </div>
+                        <p className="text-slate-600 text-base mb-6 font-medium bg-white/50 p-3 rounded-lg text-left">{selectedMission.quiz.explanation}</p>
+                        <div className="bg-white p-4 rounded-lg border-2 border-emerald-500 text-center shadow-sm transform hover:scale-105 transition-transform">
+                          <span className="block text-xs font-bold text-emerald-600 tracking-wider mb-1 uppercase">새로운 단서 획득</span>
+                          <span className="font-black text-2xl text-slate-800">{selectedMission.card.name}</span>
+                          <span className="block mt-2 text-sm text-slate-500">[{selectedMission.card.title}]</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {quizResult === 'WRONG' && (
+                      <div className="bg-rose-50 w-full p-6 rounded-xl mb-6 border border-rose-200 animate-pulse">
+                        <div className="flex items-center justify-center gap-2">
+                           <span className="text-2xl">❌</span>
+                           <p className="text-rose-700 font-black text-lg">오답입니다. 다시 한번 생각해보세요!</p>
+                        </div>
+                      </div>
+                    )}
+
+                    <button 
+                      onClick={closeQuiz} 
+                      className={`w-full py-4 rounded-xl font-bold text-lg mt-2 transition-all ${quizResult === 'CORRECT' ? 'bg-indigo-600 text-white hover:bg-indigo-500' : 'bg-slate-200 text-slate-700 hover:bg-slate-300 shadow-sm hover:shadow-md'}`}
+                    >
+                      {quizResult === 'CORRECT' ? '지도로 돌아가기' : '닫기'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* --- [모의재판 페이즈] --- */}
+              {phase === 'TRIAL' && (
+                <div className="flex flex-col gap-6 mt-4">
+                  
+                  {/* 대화창 영역 */}
+                  <div className={`text-white p-8 rounded-2xl shadow-2xl h-72 md:h-80 flex flex-col justify-end relative overflow-hidden border-4 transition-all duration-500 
+                    ${isGameOver ? 'bg-rose-950 border-rose-800' : trialRound === 5 ? 'bg-emerald-900 border-emerald-700' : 'bg-slate-900 border-slate-700'}`}>
+                     
+                     {/* 디테일 장식 요소 */}
+                     <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full blur-3xl mix-blend-overlay"></div>
+                     <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-500 opacity-5 rounded-full blur-3xl mix-blend-overlay"></div>
+
+                     {!isGameOver && trialRound <= 4 && (
+                       <div className="absolute top-6 left-6 flex items-center gap-3 z-20">
+                         <div className="bg-rose-600 text-white font-black px-3 py-1 rounded text-sm tracking-widest shadow-md">TRIAL</div>
+                         <div className="text-slate-300 font-bold tracking-widest bg-slate-800/80 px-4 py-1.5 rounded-full border border-slate-700 shadow-inner">
+                           ROUND <span className="text-white text-lg ml-1">{trialRound}</span> <span className="opacity-50">/ 4</span>
+                         </div>
+                       </div>
+                     )}
+                     
+                     <div className={`relative z-10 bg-black/40 backdrop-blur-sm p-4 md:p-6 rounded-xl border-l-4 ${isGameOver ? 'border-rose-500' : trialRound === 5 ? 'border-emerald-500' : 'border-indigo-500'}`}>
+                         <p className={`text-xl md:text-3xl font-bold leading-snug 
+                           ${isGameOver ? 'text-rose-200' : trialRound === 5 ? 'text-emerald-200' : 'text-amber-300'}`}>
+                           "{trialMessage.split(': ').length > 1 ? 
+                             <span className="text-white bg-black/30 px-2 py-1 rounded text-sm uppercase translate-y-[-5px] inline-block mr-2">{trialMessage.split(': ')[0]}</span> 
+                             : ''
+                           } 
+                           {trialMessage.split(': ').length > 1 ? trialMessage.split(': ')[1] : trialMessage}"
+                         </p>
+                     </div>
+                  </div>
+
+                  {/* 인벤토리 (제시할 단서) */}
+                  <div className={`bg-white p-6 md:p-8 rounded-2xl shadow-xl border border-slate-200 transition-opacity duration-500 ${isGameOver || trialRound === 5 ? 'opacity-50 pointer-events-none grayscale' : ''}`}>
+                    <h3 className="font-black text-xl mb-6 text-slate-800 flex items-center gap-2">
+                      <span className="bg-slate-100 p-2 rounded-lg">💼</span> 증거물 인벤토리 <span className="text-sm font-normal text-slate-500 ml-2 block md:inline mt-1 md:mt-0">(어떤 단서로 반박하시겠습니까?)</span>
+                    </h3>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                      {inventory.map((card, idx) => (
+                        <button 
+                          key={card.id}
+                          onClick={() => handleSubmitCard(card)}
+                          className={`group relative text-left border-2 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl overflow-hidden rounded-xl bg-white
+                            ${card.type === '유리' ? 'border-emerald-400' : 'border-rose-400'}`}
+                        >
+                          <div className={`absolute top-0 left-0 w-full h-1.5 ${card.type === '유리' ? 'bg-emerald-400' : 'bg-rose-400'}`}></div>
+                          <div className="p-5">
+                              <div className="flex justify-between items-start mb-2">
+                                <span className="font-black text-xs text-slate-400 tracking-wider uppercase bg-slate-100 px-2 py-0.5 rounded-sm">{card.title}</span>
+                                <span className={`text-[10px] font-black px-2 py-0.5 rounded-sm uppercase tracking-wider
+                                    ${card.type === '유리' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
+                                    {card.type}
+                                </span>
+                              </div>
+                              <div className="font-black text-xl text-slate-800 mb-3 group-hover:text-indigo-600 transition-colors">{card.name}</div>
+                              <div className="text-sm text-slate-600 line-clamp-2 leading-relaxed font-medium bg-slate-50 p-3 rounded-lg border border-slate-100 shadow-inner group-hover:bg-indigo-50/50">{card.desc}</div>
+                          </div>
+                      </button>
+                      ))}
+                      {inventory.length === 0 && (
+                        <div className="col-span-1 border-2 border-dashed border-slate-300 rounded-xl bg-slate-50 sm:col-span-2 lg:col-span-3 text-center py-16 text-slate-400">
+                           아직 획득한 증거(단서)가 없습니다. 지도로 돌아가 찾으세요.
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="mt-8 flex flex-col sm:flex-row justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-200 gap-4">
+                      <button 
+                        onClick={() => setPhase('MAP')}
+                        className="text-indigo-600 font-bold text-sm hover:text-indigo-800 flex items-center gap-2 transition-transform hover:-translate-x-1"
+                      >
+                        <span className="text-xl">⬅️</span> 지도로 돌아가기
+                      </button>
+                      
+                      {(isGameOver || trialRound === 5) && (
+                        <button 
+                          onClick={() => window.location.reload()}
+                          className="bg-slate-900 text-white px-6 py-3 rounded-xl font-black hover:bg-slate-800 transition shadow-lg hover:-translate-y-1 w-full sm:w-auto text-center"
+                        >
+                          <span className="text-xl mr-2">🔄</span> 처음부터 다시하기
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<MockTrialGame />);
+    </script>
+</body>
+</html>
