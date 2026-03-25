@@ -321,13 +321,14 @@ function renderDashboard() {
                         <img src="${IMAGES.wizard}" alt="직업 체험 퀘스트" style="width: 140px; height: 140px;" />
                         <h3 style="font-size: 1.6rem; color: #fff; margin: 0;">시뮬레이션 퀘스트 입장</h3>
                         <p style="font-size: 1rem; color: #cbd5e1; margin-top: 0.5rem;">당신의 직업적 로망, 현실의 미션을 통해 검증해보세요.</p>
-                        <div class="glass-card menu-card" onclick="window.location.href='fund_manager.html'" style="flex: 1; min-width: 320px; padding: 2rem;">
+                    </div>
+
+                    <div class="glass-card menu-card" onclick="window.location.href='fund_manager.html'" style="flex: 1; min-width: 320px; padding: 2rem;">
                         <div class="badge" style="background:#3b82f6;">Trading Mission</div>
                         <div style="font-size: 80px; margin: 10px 0;">📈</div>
                         <h3 style="font-size: 1.6rem; color: #fff; margin: 0;">2010 펀드매니저 미션</h3>
                         <p style="font-size: 1rem; color: #cbd5e1; margin-top: 0.5rem;">자산 비중을 100% 분배하여 1년 후 10% 이상의 수익률을 창출하라.</p>
                     </div>
-                </div>
 
                     <div class="glass-card menu-card" onclick="window.location.href='mock_trial.html'" style="flex: 1; min-width: 320px; padding: 2rem;">
                         <div class="badge" style="background:#eab308;">New Sub-Menu</div>
@@ -341,6 +342,34 @@ function renderDashboard() {
                         <div style="font-size: 80px; margin: 10px 0;">🎲</div>
                         <h3 style="font-size: 1.6rem; color: #fff; margin: 0;">아비투스 인생게임</h3>
                         <p style="font-size: 1rem; color: #cbd5e1; margin-top: 0.5rem;">타고난 자본과 선택이 만드는 계층 이동 사다리를 체험해 보세요.</p>
+                    </div>
+
+                    <div class="glass-card menu-card" onclick="window.location.href='supply_demand.html'" style="flex: 1; min-width: 320px; padding: 2rem;">
+                        <div class="badge" style="background:#10b981;">Economy Sim</div>
+                        <div style="font-size: 80px; margin: 10px 0;">⚖️</div>
+                        <h3 style="font-size: 1.6rem; color: #fff; margin: 0;">수요와 공급 게임</h3>
+                        <p style="font-size: 1rem; color: #cbd5e1; margin-top: 0.5rem;">자원 비대칭과 화폐의 탄생, 시장의 원리를 체험하는 시뮬레이션입니다.</p>
+                    </div>
+
+                    <div class="glass-card menu-card" onclick="window.location.href='separation_of_powers.html'" style="flex: 1; min-width: 320px; padding: 2rem;">
+                        <div class="badge" style="background:#dc2626;">Law / Politics Sim</div>
+                        <div style="font-size: 80px; margin: 10px 0;">🏛️</div>
+                        <h3 style="font-size: 1.6rem; color: #fff; margin: 0;">삼권분립 마블 보드게임</h3>
+                        <p style="font-size: 1rem; color: #cbd5e1; margin-top: 0.5rem;">주사위를 굴리며 헌법재판소, 입법부, 사법부 등 국가 기관을 점령하세요.</p>
+                    </div>
+
+                    <div class="glass-card menu-card" onclick="window.location.href='consulting_tycoon.html'" style="flex: 1; min-width: 320px; padding: 2rem;">
+                        <div class="badge" style="background:#6366f1;">Business Sim</div>
+                        <div style="font-size: 80px; margin: 10px 0;">🏢</div>
+                        <h3 style="font-size: 1.6rem; color: #fff; margin: 0;">컨설팅 타이쿤</h3>
+                        <p style="font-size: 1rem; color: #cbd5e1; margin-top: 0.5rem;">위기에 처한 기업을 구하는 컨설턴트가 되어 파산을 막아주세요.</p>
+                    </div>
+
+                    <div class="glass-card menu-card" onclick="window.location.href='mock_investment_game.html'" style="flex: 1; min-width: 320px; padding: 2rem;">
+                        <div class="badge" style="background:#ea580c;">Investment Sim</div>
+                        <div style="font-size: 80px; margin: 10px 0;">📊</div>
+                        <h3 style="font-size: 1.6rem; color: #fff; margin: 0;">글로벌 모의투자 보드게임</h3>
+                        <p style="font-size: 1rem; color: #cbd5e1; margin-top: 0.5rem;">과거로 돌아가 거시경제 퀴즈를 맞히고 투자를 통해 자산을 불리세요.</p>
                     </div>
                 </div>
             </div>

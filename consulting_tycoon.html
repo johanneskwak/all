@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consulting Tycoon</title>
+    <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Pretendard', sans-serif; background-color: #f8fafc; color: #333; margin: 0; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        h1, h2, h3 { color: #1e293b; margin-top: 0; }
+        .btn { padding: 12px 20px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 15px; transition: 0.2s; width: 100%; text-align: left; margin-bottom: 10px; }
+        .btn:hover:not(:disabled) { background: #2563eb; }
+        .btn:disabled { background: #cbd5e1; cursor: not-allowed; }
+        .btn-primary { background: #10b981; text-align: center; }
+        .btn-primary:hover:not(:disabled) { background: #059669; }
+        .btn-card { background: #8b5cf6; text-align: center; margin-bottom: 10px; }
+        .btn-card:hover:not(:disabled) { background: #7c3aed; }
+        
+        .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px; }
+        .grid-2 { display: grid; grid-template-columns: 2fr 1fr; gap: 30px; margin-bottom: 20px; }
+        
+        .card { padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f8fafc; }
+        .metric-card { text-align: center; padding: 15px; background: #eff6ff; border-radius: 8px; border: 1px solid #bfdbfe; font-size: 20px; font-weight: bold; }
+        .metric-label { font-size: 14px; color: #64748b; font-weight: normal; margin-bottom: 5px; }
+        
+        .progress-container { margin-bottom: 15px; }
+        .progress-label { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 5px; font-weight: 600; }
+        .progress-bar { width: 100%; background-color: #e2e8f0; border-radius: 4px; height: 8px; overflow: hidden; }
+        .progress-fill { height: 100%; background-color: #3b82f6; transition: width 0.3s ease; }
+        
+        .alert { padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 5px solid; }
+        .alert-info { background: #eff6ff; border-color: #3b82f6; color: #1e3a8a; }
+        .alert-warning { background: #fffbeb; border-color: #f59e0b; color: #b45309; }
+        .alert-error { background: #fef2f2; border-color: #ef4444; color: #b91c1c; }
+        .alert-success { background: #ecfdf5; border-color: #10b981; color: #047857; }
+        
+        .log-box { font-size: 13px; color: #64748b; background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0; height: 300px; overflow-y: auto; }
+        .log-item { margin-bottom: 5px; padding-bottom: 5px; border-bottom: 1px solid #f1f5f9; }
+        
+        .back-link { display: inline-block; margin-bottom: 20px; color: #64748b; text-decoration: none; font-weight: 600; }
+        .back-link:hover { color: #333; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // --- Data Definitions ---
+        const MISSIONS = [
+            {id: "brand", name: "✨ 명품 브랜드의 탄생", desc: "우리 브랜드를 하이엔드 명품으로 만드세요. (조건: 브랜드 인지도 95 이상, 상품 퀄리티 90 이상)", reward: 2000},
+            {id: "hr", name: "🏢 꿈의 직장", desc: "모두가 입사하고 싶어하는 최고의 직장을 만드세요. (조건: 직원 만족도 95 이상, 돈 버는 능력 50 이상 유지)", reward: 1500},
+            {id: "profit", name: "💰 캐시카우", desc: "압도적인 현금 창출 능력을 증명하세요. (조건: 돈 버는 능력 95 이상, 최종 HP 200 이상)", reward: 2000},
+            {id: "awareness", name: "🛒 국민 아이템", desc: "전 국민이 아는 메가 히트 상품을 만드세요. (조건: 상품 인지도 95 이상, 상품 퀄리티 80 이상)", reward: 1500},
+            {id: "balanced", name: "🦄 육각형 유니콘", desc: "모든 지표가 우수한 밸런스형 기업으로 성장시키세요. (조건: 5대 지표 평균 75점 이상)", reward: 3000}
+        ];
+
+        const SCENARIOS = [
+            {
+                domain: "Finance (재무/세금)",
+                news: "📰 [경제] 국세청, 당사에 대한 전격 특별 세무조사 착수! 추징금 40 HP 예상.",
+                card_solvers: {
+                    "회계사": {desc: "추징금 50% 방어", text: "정밀한 회계 감사를 통해 세금 폭탄을 절반으로 줄였습니다! (HP -20 방어 성공)", hp_cost: 20, stats: {profit: 10}},
+                    "세무사": {desc: "추징금 30% 방어", text: "세무 조정을 통해 추징금의 일부를 방어했습니다! (HP -28로 선방)", hp_cost: 28, stats: {profit: 5}}
+                },
+                choices: {
+                    "A안": {text: "조사에 성실히 임하며 과징금 전액 납부", hp: 40, mp: 0, stats: {profit: -15}},
+                    "B안": {text: "재무팀 풀가동으로 소명 자료 완벽 준비", hp: 0, mp: 30, stats: {employee: -15, profit: 5}},
+                    "C안": {text: "언론 플레이로 국세청 압박 (위험/브랜드 타격)", hp: 0, mp: 10, stats: {brand_aware: -20, profit: -10}}
+                }
+            },
+            {
+                domain: "HR (인사/조직)",
+                news: "📰 [블라인드 썰] '일하는 사람만 일한다' 부서 간 이기주의 심각, 핵심 인재 퇴사 줄이어...",
+                card_solvers: {
+                    "노무사": {desc: "인사 위기 완벽 해결", text: "노사 갈등을 원만하게 중재하고 불만 사항을 합법적으로 해결했습니다! (비용 0)", hp_cost: 0, stats: {employee: 20}}
+                },
+                choices: {
+                    "A안": {text: "전사적 워크샵 및 소통 강화", hp: 15, mp: 0, stats: {employee: 15, profit: -5}},
+                    "B안": {text: "인사평가 시스템 전면 개편", hp: 0, mp: 20, stats: {employee: 10, profit: 10}},
+                    "C안": {text: "성과 미달자 권고사직 (극약처방)", hp: 0, mp: 10, stats: {employee: -15, profit: 25}}
+                }
+            },
+            {
+                domain: "Legal (법무/소송)",
+                news: "📰 [법률 속보] 경쟁사에서 100억 원대 특허 침해 및 영업방해 소송 전격 제기!",
+                card_solvers: {
+                    "변호사": {desc: "소송 완벽 방어", text: "철저한 법리 검토로 소송을 기각시키고 오히려 합의금을 받아냈습니다! (비용 0)", hp_cost: 0, stats: {profit: 15, brand_aware: 10}}
+                },
+                choices: {
+                    "A안": {text: "거액의 합의금 지불 후 조기 종결", hp: 40, mp: 0, stats: {profit: -10, brand_aware: -5}},
+                    "B안": {text: "자체 법무팀 야근으로 맞소송 준비", hp: 0, mp: 30, stats: {employee: -10, brand_aware: 5}},
+                    "C안": {text: "무대응으로 일관 (패소 위험)", hp: 20, mp: 0, stats: {profit: -20, brand_aware: -15}}
+                }
+            },
+            {
+                domain: "Production (제조/품질)",
+                news: "📰 [소비자 고발] 주력 상품에서 유해물질 검출 논란! 전량 리콜 위기.",
+                choices: {
+                    "A안": {text: "전량 리콜 및 조건 없는 환불", hp: 40, mp: 0, stats: {brand_aware: 15, profit: -20}},
+                    "B안": {text: "기준치 이하라고 과학적 데이터로 반박", hp: 0, mp: 30, stats: {brand_aware: -15, product: 10}},
+                    "C안": {text: "해당 라인만 조용히 단종", hp: 15, mp: 0, stats: {product: -15, profit: 5}}
+                }
+            },
+            {
+                domain: "Sales (영업/B2B)",
+                news: "📰 [업계 동향] 회사의 최대 납품처, 돌연 파산 선고. 대금 회수 불투명 및 연쇄 부도 우려.",
+                choices: {
+                    "A안": {text: "긴급 자금 대출로 연쇄 부도 방어", hp: 30, mp: 0, stats: {profit: -15, brand_aware: 5}},
+                    "B안": {text: "영업팀 총동원하여 신규 거래처 긴급 발굴", hp: 0, mp: 30, stats: {product_aware: 15, employee: -10}},
+                    "C안": {text: "미수금 포기하고 사내 긴축 재정 돌입", hp: 10, mp: 0, stats: {profit: 15, employee: -15}}
+                }
+            },
+            {
+                domain: "Competitor (경쟁사)",
+                news: "📰 [스타트업] 파격적인 반값 가격표를 단 카피캣 제품 등장! 시장 점유율 폭락 중.",
+                choices: {
+                    "A안": {text: "출혈 경쟁 불사! 맞불 초특가 할인", hp: 30, mp: 0, stats: {profit: -25, product_aware: 20}},
+                    "B안": {text: "디자인 및 성능 개선 프리미엄 전략", hp: 0, mp: 30, stats: {brand_aware: 15, product: 15}},
+                    "C안": {text: "기존 충성 고객 대상 멤버십 혜택 강화", hp: 15, mp: 10, stats: {profit: -5, brand_aware: 10}}
+                }
+            },
+            {
+                domain: "Marketing (마케팅/영업)",
+                news: "📰 [시장 동향] 신제품 퀄리티는 역대급인데, 소비자 인지도가 0%에 수렴 중...",
+                choices: {
+                    "A안": {text: "타겟 맞춤형 SNS 바이럴 캠페인", hp: 10, mp: 10, stats: {product_aware: 20, profit: 5}},
+                    "B안": {text: "유명 연예인 발탁 대규모 TV 광고", hp: 40, mp: 0, stats: {product_aware: 40, brand_aware: 20, profit: -10}},
+                    "C안": {text: "재고 떨이 반값 할인 (브랜드 타격)", hp: 0, mp: 10, stats: {product_aware: 15, brand_aware: -10, profit: -15}}
+                }
+            },
+            {
+                domain: "External (외부 재앙/공급망)",
+                news: "📰 [속보] 주요 부품 생산국에 대규모 홍수 발생! 공급망 마비로 원자재가 폭등.",
+                choices: {
+                    "A안": {text: "단가 높은 대체 공급선 긴급 계약", hp: 25, mp: 0, stats: {product: 5, profit: -15}},
+                    "B안": {text: "사태 진정까지 공장 가동 축소", hp: 0, mp: 20, stats: {product_aware: -10, profit: -10}},
+                    "C안": {text: "품질이 낮은 저가 부품으로 일시 대체 (위험)", hp: 0, mp: 10, stats: {product: -20, profit: 15, brand_aware: -15}}
+                }
+            }
+        ];
+
+        const JOB_CARDS = [
+            {name: "변호사", cost: 500, uses: 5, desc: "법무/소송 완벽 방어"},
+            {name: "노무사", cost: 300, uses: 3, desc: "인사/HR 완벽 방어"},
+            {name: "회계사", cost: 400, uses: 3, desc: "재무/세금 비용 50% 방어"},
+            {name: "세무사", cost: 200, uses: 3, desc: "재무/세금 비용 30% 방어"}
+        ];
+
+        function App() {
+            const [scene, setScene] = React.useState('lobby');
+            const [globalMoney, setGlobalMoney] = React.useState(1000);
+            const [cards, setCards] = React.useState({});
+            const [mission, setMission] = React.useState(null);
+            const [turn, setTurn] = React.useState(1);
+            const [hp, setHp] = React.useState(100);
+            const [mp, setMp] = React.useState(50);
+            const [stats, setStats] = React.useState({product: 50, employee: 50, product_aware: 50, brand_aware: 50, profit: 50});
+            const [logs, setLogs] = React.useState([]);
+            const [scenario, setScenario] = React.useState(null);
+            const [ceoBlocking, setCeoBlocking] = React.useState(false);
+            const [pendingSolution, setPendingSolution] = React.useState(null);
+
+            const addLog = (msg) => {
+                setLogs(prev => [`[턴 ${turn}] ${msg}`, ...prev]);
+            };
+
+            const pickNewScenario = (currentDomain) => {
+                let s = SCENARIOS[Math.floor(Math.random() * SCENARIOS.length)];
+                while (s.domain === currentDomain) {
+                    s = SCENARIOS[Math.floor(Math.random() * SCENARIOS.length)];
+                }
+                return s;
+            };
+
+            const startGame = () => {
+                const newMission = MISSIONS[Math.floor(Math.random() * MISSIONS.length)];
+                setMission(newMission);
+                setTurn(1);
+                setHp(100);
+                setMp(50);
+                setStats({product: 50, employee: 50, product_aware: 50, brand_aware: 50, profit: 50});
+                setCeoBlocking(false);
+                setPendingSolution(null);
+                setScenario(SCENARIOS[Math.floor(Math.random() * SCENARIOS.length)]);
+                setLogs([`이번 컨설팅 목표: ${newMission.name}`]);
+                setScene('game');
+            };
+
+            const buyCard = (job) => {
+                if (globalMoney >= job.cost && !cards[job.name]) {
+                    setGlobalMoney(prev => prev - job.cost);
+                    setCards(prev => ({...prev, [job.name]: job.uses}));
+                }
+            };
+
+            const applyEffects = (effectKey, theScenario) => {
+                const effect = theScenario.choices[effectKey];
+                setHp(prev => Math.max(0, prev - effect.hp));
+                setMp(prev => Math.max(0, prev - effect.mp));
+                setStats(prev => {
+                    const newStats = {...prev};
+                    for (let [k, val] of Object.entries(effect.stats)) {
+                        newStats[k] = Math.min(100, Math.max(0, newStats[k] + val));
+                    }
+                    return newStats;
+                });
+                addLog(`솔루션 '${effectKey}' 실행 완료!`);
+            };
+
+            const passTurn = (isGameOverCondition = false) => {
+                if(isGameOverCondition || hp <= 0 || turn >= 20) {
+                    setScene('ending');
+                    return;
+                }
+                setHp(prev => Math.max(0, prev + 10)); // HP 회복 상향
+                setMp(prev => Math.min(100, Math.max(0, prev + 10)));
+                setTurn(prev => {
+                    const nextTurn = prev + 1;
+                    if(nextTurn > 20) {
+                        setScene('ending');
+                    }
+                    return nextTurn;
+                });
+                setScenario(prev => pickNewScenario(prev.domain));
+                setCeoBlocking(false);
+                setPendingSolution(null);
+                addLog(`턴 종료. (HP/MP 10 자동 회복) 새로운 위기가 보고되었습니다.`);
+            };
+
+            const handleChoice = (key, data) => {
+                if (Math.random() < 0.3) {
+                    setPendingSolution(key);
+                    setCeoBlocking(true);
+                    addLog(`솔루션 '${key}' 제안! 하지만 사장님이 강력히 반대합니다.`);
+                } else {
+                    applyEffects(key, scenario);
+                    setTimeout(() => passTurn(), 50); // wait for state
+                }
+            };
+
+            const handleCard = (cardName, cardInfo) => {
+                if (hp < cardInfo.hp_cost) {
+                    alert(`카드를 써도 방어에 필요한 최소 자금(${cardInfo.hp_cost})이 부족합니다!`);
+                    return;
+                }
+                setCards(prev => ({...prev, [cardName]: prev[cardName] - 1}));
+                setHp(prev => prev - cardInfo.hp_cost);
+                setStats(prev => {
+                    const newStats = {...prev};
+                    for (let [k, val] of Object.entries(cardInfo.stats)) {
+                        newStats[k] = Math.min(100, Math.max(0, newStats[k] + val));
+                    }
+                    return newStats;
+                });
+                addLog(`[${cardName} 발동!] ${cardInfo.text}`);
+                setTimeout(() => passTurn(), 50);
+            };
+
+            const handleCeoPersuade = () => {
+                if (mp < 20) return;
+                setMp(prev => prev - 20);
+                setCeoBlocking(false);
+                addLog("프레젠테이션으로 사장님 설득에 성공했습니다!");
+                applyEffects(pendingSolution, scenario);
+                setTimeout(() => passTurn(), 50);
+            };
+
+            const handleCeoGiveUp = () => {
+                setCeoBlocking(false);
+                addLog("설득을 포기했습니다.");
+                setTimeout(() => passTurn(), 50);
+            };
+
+            // --- Render Lobby ---
+            if (scene === 'lobby') {
+                return (
+                    <div className="container">
+                        <a href="index.html" className="back-link">← 포트폴리오 메인으로 돌아가기</a>
+                        <h1>🏢 내 컨설팅 펌 (로비)</h1>
+                        <div className="alert alert-info">
+                            <strong>🏆 게임 목표 및 승리 조건 (필독)</strong>
+                            <ul style={{marginBottom:0}}>
+                                <li><strong>목표 하달:</strong> 시작 시 무작위 목표(미션)가 하달됩니다.</li>
+                                <li><strong>전략적 선택:</strong> 20턴 동안 파산을 막고 조건을 달성하세요. 매턴 HP/MP가 10 회복됩니다.</li>
+                                <li><strong>파산 주의:</strong> 선택지가 하나도 없으면 파산합니다.</li>
+                                <li><strong>스카우트:</strong> 획득한 수임료로 전문가를 고용하여 방어 카드로 쓰세요.</li>
+                            </ul>
+                        </div>
+                        <div className="metric-card" style={{margin:'20px 0'}}>보유 자본금 (수임료): {globalMoney} 만원</div>
+                        
+                        <h3>🤝 네트워킹 파티 (직업 스카우트)</h3>
+                        <div className="grid-4">
+                            {JOB_CARDS.map(job => (
+                                <div key={job.name} className="card">
+                                    <div style={{fontWeight:'bold'}}>{job.name} ({job.cost}만)</div>
+                                    <p style={{fontSize:'13px', color:'#64748b'}}>{job.desc} <br/>(최대 {job.uses}회)</p>
+                                    <button className="btn" disabled={globalMoney < job.cost || cards[job.name]} onClick={() => buyCard(job)}>
+                                        {cards[job.name] ? '영입완료' : '영입하기'}
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+
+                        {Object.keys(cards).length > 0 && (
+                            <div className="alert alert-success">
+                                보유 중인 카드: {Object.entries(cards).map(([k,v]) => `${k}(${v}회)`).join(', ')}
+                            </div>
+                        )}
+
+                        <button className="btn btn-primary" style={{marginTop:'20px', fontSize:'18px'}} onClick={startGame}>🚀 무작위 미션 배정받고 컨설팅 시작하기</button>
+                    </div>
+                );
+            }
+
+            // --- Render Ending ---
+            if (scene === 'ending') {
+                let success = false;
+                if (hp > 0) {
+                    if (mission.id === 'brand' && stats.brand_aware >= 95 && stats.product >= 90) success = true;
+                    else if (mission.id === 'hr' && stats.employee >= 95 && stats.profit >= 50) success = true;
+                    else if (mission.id === 'profit' && stats.profit >= 95 && hp >= 200) success = true;
+                    else if (mission.id === 'awareness' && stats.product_aware >= 95 && stats.product >= 80) success = true;
+                    else if (mission.id === 'balanced' && (Object.values(stats).reduce((a,b)=>a+b,0)/5) >= 75) success = true;
+                }
+
+                return (
+                    <div className="container">
+                        <h1 style={{textAlign:'center'}}>🏁 컨설팅 최종 결과 보고서</h1>
+                        <div className="card" style={{textAlign:'center', marginBottom:'30px'}}>
+                            <h3>부여된 미션: {mission.name}</h3>
+                            <p>{mission.desc}</p>
+                        </div>
+
+                        {hp <= 0 ? (
+                            <div className="alert alert-error">💸 자금이 완전히 고갈되어 회사가 파산했습니다. (게임 오버)</div>
+                        ) : success ? (
+                            <div className="alert alert-success">
+                                🌟 <strong>[뉴스] 컨설팅 대성공!</strong> 클라이언트의 요구사항을 완벽히 달성했습니다.<br/>
+                                수임료 {mission.reward}만원이 입금되었습니다.
+                                {(() => { if (!window.rewardAdded) { setGlobalMoney(m => m + mission.reward); window.rewardAdded = true; } })()}
+                            </div>
+                        ) : (
+                            <div className="alert alert-warning">
+                                📉 <strong>[뉴스] 파산은 면했지만...</strong> '{mission.name}' 목표 달성에는 실패했습니다.<br/>
+                                위약금을 제외한 기본 수임료 300만원만 지급됩니다.
+                                {(() => { if (!window.rewardAdded) { setGlobalMoney(m => m + 300); window.rewardAdded = true; } })()}
+                            </div>
+                        )}
+
+                        <div className="grid-3" style={{marginTop:'30px'}}>
+                            <div className="metric-card">최종 HP<br/>{hp}</div>
+                            <div className="metric-card">최종 MP<br/>{mp}</div>
+                            <div className="metric-card">턴<br/>{turn}/20</div>
+                        </div>
+
+                        <h3>5대 지표 결과</h3>
+                        <div className="grid-2">
+                            <div>
+                                {Object.entries({
+                                    '상품 퀄리티': stats.product,
+                                    '직원 만족도': stats.employee,
+                                    '상품 인지도': stats.product_aware,
+                                    '브랜드 가치': stats.brand_aware,
+                                    '돈 버는 능력': stats.profit
+                                }).map(([label, val]) => (
+                                    <div className="progress-container" key={label}>
+                                        <div className="progress-label"><span>{label}</span> <span>{val}</span></div>
+                                        <div className="progress-bar"><div className="progress-fill" style={{width: `${val}%`}}></div></div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <button className="btn btn-primary" onClick={() => { window.rewardAdded = false; setScene('lobby'); }}>로비로 돌아가기</button>
+                    </div>
+                );
+            }
+
+            // --- Render Game ---
+            const renderStatProgress = (label, val) => (
+                <div className="progress-container" key={label}>
+                    <div className="progress-label"><span>{label}</span> <span>{val}</span></div>
+                    <div className="progress-bar"><div className="progress-fill" style={{width: `${val}%`}}></div></div>
+                </div>
+            );
+
+            let canAffordAny = false;
+            Object.values(scenario.choices).forEach(c => {
+                if (hp >= c.hp && mp >= c.mp) canAffordAny = true;
+            });
+
+            return (
+                <div className="container">
+                    <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: '20px'}}>
+                        <h1 style={{margin:0}}>📊 Consulting Tycoon</h1>
+                        <button className="btn btn-danger" style={{width:'auto', margin:0, padding:'8px 15px'}} onClick={() => { setHp(0); setScene('ending'); }}>기권(파산)</button>
+                    </div>
+                    
+                    <div className="alert alert-info">
+                        <strong>🎯 [이번 게임의 목표] {mission.name}</strong><br/>
+                        {mission.desc}
+                    </div>
+
+                    <div className="grid-3">
+                        <div className="metric-card"><div className="metric-label">Turn</div>{turn} / 20</div>
+                        <div className="metric-card"><div className="metric-label">💰 HP (자금)</div>{hp}</div>
+                        <div className="metric-card"><div className="metric-label">🧠 MP (행동력)</div>{mp}</div>
+                    </div>
+
+                    <div className="grid-2">
+                        <div>
+                            <h3>📈 회사 5대 지표</h3>
+                            <div className="card" style={{marginBottom:'20px'}}>
+                                {renderStatProgress('상품 퀄리티', stats.product)}
+                                {renderStatProgress('직원 만족도', stats.employee)}
+                                {renderStatProgress('상품 인지도', stats.product_aware)}
+                                {renderStatProgress('브랜드 가치', stats.brand_aware)}
+                                {renderStatProgress('돈 버는 능력', stats.profit)}
+                            </div>
+
+                            <h3>⚠️ 현재 당면한 과제: {scenario.domain}</h3>
+                            <div className="alert alert-warning">{scenario.news}</div>
+
+                            {ceoBlocking ? (
+                                <div className="alert alert-error">
+                                    <strong>🤬 사장님: "그 방식은 비용이나 리스크가 너무 커! 반대일세!"</strong><br/><br/>
+                                    <button className="btn" disabled={mp < 20} onClick={handleCeoPersuade}>🗣️ 논리로 설득하기 (MP 20 소모)</button>
+                                    <button className="btn" onClick={handleCeoGiveUp}>포기하고 턴 넘기기 (솔루션 무효)</button>
+                                </div>
+                            ) : (
+                                <div>
+                                    {/* Card Solvers */}
+                                    {scenario.card_solvers && Object.entries(scenario.card_solvers).map(([cName, cInfo]) => {
+                                        if (cards[cName] && cards[cName] > 0) {
+                                            return (
+                                                <button key={cName} className="btn btn-card" onClick={() => handleCard(cName, cInfo)}>
+                                                    🛡️ [{cName} 사용] {cInfo.desc} (남은 횟수: {cards[cName]}회)
+                                                </button>
+                                            )
+                                        }
+                                        return null;
+                                    })}
+
+                                    <h3>⚡ 컨설팅 솔루션 제안</h3>
+                                    {!canAffordAny ? (
+                                        <div className="alert alert-error">
+                                            🚨 자금(HP) 또는 행동력(MP)이 완전히 바닥나 더 이상 어떤 솔루션도 실행할 수 없습니다!<br/><br/>
+                                            <button className="btn btn-danger" onClick={() => setScene('ending')}>파산 처리 (결과 보기)</button>
+                                        </div>
+                                    ) : (
+                                        Object.entries(scenario.choices).map(([key, data]) => {
+                                            const disabled = hp < data.hp || mp < data.mp;
+                                            return (
+                                                <button key={key} className="btn" disabled={disabled} onClick={() => handleChoice(key, data)}>
+                                                    <strong>{key}:</strong> {data.text} (HP -{data.hp}, MP -{data.mp})
+                                                </button>
+                                            )
+                                        })
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        <div>
+                            <h3>🎒 내 인벤토리</h3>
+                            <div className="card" style={{marginBottom:'20px'}}>
+                                {Object.keys(cards).length === 0 ? "보유 카드가 없습니다." : 
+                                    Object.entries(cards).map(([k,v]) => (
+                                        v > 0 && <div key={k} style={{background:'#10b981', color:'white', padding:'8px 12px', borderRadius:'6px', marginBottom:'5px', fontWeight:'bold'}}>💳 {k} ({v}회)</div>
+                                    ))
+                                }
+                            </div>
+
+                            <h3>📝 진행 로그</h3>
+                            <div className="log-box">
+                                {logs.map((L, i) => <div key={i} className="log-item">{L}</div>)}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>

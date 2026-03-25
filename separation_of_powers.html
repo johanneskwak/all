@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>삼권분립 마블 보드게임</title>
+    <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Pretendard', sans-serif; background-color: #f8fafc; color: #333; margin: 0; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        h1 { text-align: center; color: #1e293b; }
+        .setup-screen, .game-screen { display: flex; flex-direction: column; gap: 20px; }
+        .btn { padding: 12px 24px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.2s; }
+        .btn:hover { background: #2563eb; }
+        .btn:disabled { background: #cbd5e1; cursor: not-allowed; }
+        .btn-danger { background: #ef4444; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-success { background: #10b981; }
+        .btn-success:hover { background: #059669; }
+        
+        .score-board { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .score-card { flex: 1; padding: 15px; border-radius: 8px; font-weight: bold; text-align: center; border: 2px solid transparent; min-width: 120px; }
+        .score-card.active { border-color: #3b82f6; background-color: #eff6ff; }
+        
+        .board-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 30px; }
+        .board-cell { border: 2px solid #64748b; border-radius: 8px; padding: 10px; height: 120px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; position: relative; box-shadow: 1px 1px 4px rgba(0,0,0,0.1); }
+        .cell-title { font-size: 13px; font-weight: bold; text-align: center; word-break: keep-all; }
+        .cell-owner { font-size: 11px; font-weight: bold; }
+        .player-tokens { display: flex; flex-wrap: wrap; gap: 2px; justify-content: center; }
+        .token { width: 22px; height: 22px; border-radius: 50%; color: white; font-size: 11px; display: flex; align-items: center; justify-content: center; font-weight: bold; margin: 1px; }
+        
+        .center-cell { grid-column: 2 / 5; grid-row: 2 / 5; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; background: transparent; border: none; box-shadow: none; }
+        
+        .message-box { padding: 20px; background-color: #f1f5f9; border-left: 5px solid #cbd5e1; border-radius: 4px; font-size: 16px; margin-bottom: 20px; line-height: 1.5; }
+        
+        .action-panel { display: flex; flex-direction: column; gap: 15px; background: #f8fafc; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0; }
+        
+        .quiz-container { background: #fffbeb; padding: 20px; border-radius: 8px; border: 1px solid #fde68a; }
+        .quiz-option { display: block; width: 100%; text-align: left; margin-bottom: 8px; background: white; border: 1px solid #d1d5db; padding: 10px 15px; border-radius: 6px; cursor: pointer; }
+        .quiz-option:hover { background: #f3f4f6; }
+        
+        .back-link { display: inline-block; margin-bottom: 20px; color: #64748b; text-decoration: none; font-weight: 600; }
+        .back-link:hover { color: #333; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const playerColors = ["#e74c3c", "#3498db", "#2ecc71", "#e67e22", "#9b59b6"];
+        const colorMap = {
+            "시작": "#ffe6e6", "입법부": "#ffcccc", "행정부": "#cce5ff",
+            "사법부": "#ccffcc", "독립기관": "#e6ccff", "찬스": "#fff2cc", "감옥": "#d9d9d9"
+        };
+        
+        const BOARD_DATA = [
+            {"name": "출발선", "type": "시작"},
+            {"name": "국회 상임위원회", "type": "입법부"},
+            {"name": "국회 본회의장", "type": "입법부"},
+            {"name": "황금열쇠", "type": "찬스"},
+            {"name": "행정 각 부처", "type": "행정부"},
+            {"name": "국무회의", "type": "행정부"},
+            {"name": "경찰서 (형법 위반)", "type": "감옥"},
+            {"name": "대통령실", "type": "행정부"},
+            {"name": "지방법원", "type": "사법부"},
+            {"name": "고등법원", "type": "사법부"},
+            {"name": "황금열쇠", "type": "찬스"},
+            {"name": "대법원", "type": "사법부"},
+            {"name": "헌법재판소", "type": "독립기관"},
+            {"name": "선거관리위원회", "type": "독립기관"},
+            {"name": "경찰서 (형법 위반)", "type": "감옥"},
+            {"name": "감사원", "type": "행정부"}
+        ];
+        
+        const PURCHASABLE_INDICES = BOARD_DATA.map((s, i) => s.type !== "시작" && s.type !== "찬스" && s.type !== "감옥" ? i : -1).filter(i => i !== -1);
+        
+        const QUIZZES = [
+            {"q": "국가의 최고 규범이자 국민의 기본권을 보장하는 가장 으뜸이 되는 법은?", "options": ["민법", "형법", "헌법", "상법"], "answer": "헌법"},
+            {"q": "모든 국민이 인간으로서의 존엄과 가치를 가지며, 차별받지 않을 권리는?", "options": ["자유권", "평등권", "사회권", "청구권"], "answer": "평등권"},
+            {"q": "법률안을 제정하거나 개정하는 국가 기관은?", "options": ["국회", "정부", "대법원", "헌법재판소"], "answer": "국회"},
+            {"q": "국민의 기본권은 무엇을 위해서만 법률로써 제한할 수 있을까요?", "options": ["대통령의 명령", "국가안전보장, 질서유지, 공공복리", "경제 발전", "국회의원의 동의"], "answer": "국가안전보장, 질서유지, 공공복리"},
+            {"q": "우리나라 대통령의 임기는 몇 년이며, 연임이 가능한가요?", "options": ["4년, 연임 가능", "5년, 단임제(불가능)", "5년, 연임 가능", "6년, 단임제"], "answer": "5년, 단임제(불가능)"},
+            {"q": "대통령 소속이지만 독립적인 지위를 가지며, 국가의 세금 사용과 공무원의 직무를 검사하는 기관은?", "options": ["국세청", "국회", "감사원", "기획재정부"], "answer": "감사원"},
+            {"q": "대법원이 행사하는, 행정부가 만든 명령이 헌법에 어긋나는지 심사하는 권한은?", "options": ["위헌 법률 심판", "명령·규칙 심사권", "탄핵 심판", "사면권"], "answer": "명령·규칙 심사권"},
+            {"q": "국회에서 만든 법률이 헌법에 위반되는지 여부를 판단하여 효력을 상실시키는 심판은?", "options": ["권한 쟁의 심판", "정당 해산 심판", "위헌 법률 심판", "탄핵 심판"], "answer": "위헌 법률 심판"}
+        ];
+        
+        const JAIL_EVENTS = [
+            {"desc": "주차된 오토바이를 훔쳐 탔습니다. (절도죄) 20포인트 차감.", "penalty": -20},
+            {"desc": "칠판에 친구를 놀렸습니다. (모욕죄) 15포인트 차감.", "penalty": -15},
+            {"desc": "사람을 때렸습니다. (폭행죄) 25포인트 차감.", "penalty": -25}
+        ];
+        
+        const CHANCE_EVENTS = [
+            {"type": "normal", "desc": "국정감사에서 훌륭한 시민 제보를 하여 표창을 받습니다! 20포인트 획득.", "reward": 20},
+            {"type": "normal", "desc": "무단횡단을 하다 적발되어 과태료를 냅니다. 5포인트 차감.", "reward": -5},
+            {"type": "lose_space", "targets": [1, 2], "desc": "⚖️ [헌법재판소->국회] 헌법재판소가 국회에서 만든 법률에 대해 '위헌 결정'을 내렸습니다! '국회' 구역들의 소유권이 초기화됩니다."},
+            {"type": "lose_space", "targets": [7], "desc": "⚖️ [헌법재판소->대통령] 🚨 헌법재판소가 국회의 탄핵 소추안을 인용하여 대통령이 파면되었습니다! '대통령실' 구역의 소유권이 즉시 초기화됩니다."},
+            {"type": "branch_penalty", "target_types": ["입법부"], "penalty": 10, "desc": "⚖️ [대통령->국회] 대통령이 '거부권'을 행사했습니다! '입법부' 소유자들은 각각 10포인트 잃습니다."},
+            {"type": "teacher_eval", "desc": "🔥 [도전!] 5초 안에 '삼권분립의 세 가지 국가 기관(입법, 행정, 사법)'을 큰 소리로 말하세요! (선생님이 결과를 판정합니다.)"}
+        ];
+
+        const BOARD_LAYOUT = [
+            [0,  1,  2,  3,  4],
+            [15, -1, -1, -1, 5],
+            [14, -1, -1, -1, 6],
+            [13, -1, -1, -1, 7],
+            [12, 11, 10,  9,  8]
+        ];
+
+        function App() {
+            const [gameState, setGameState] = React.useState({ started: false });
+
+            const startGame = (numPlayers) => {
+                setGameState({
+                    started: true,
+                    numPlayers,
+                    positions: Array(numPlayers).fill(0),
+                    scores: Array(numPlayers).fill(50),
+                    ownedSpaces: {},
+                    currentTurn: 0,
+                    currentQuiz: null,
+                    message: "게임이 시작되었습니다! P1의 차례입니다. 주사위를 굴려주세요.",
+                    lastDice: null,
+                    teacherEvalPending: false,
+                    gameOver: false
+                });
+            };
+
+            const checkGameOver = (state) => {
+                const ownedCount = Object.keys(state.ownedSpaces).length;
+                if (ownedCount >= PURCHASABLE_INDICES.length) {
+                    state.gameOver = true;
+                    const maxScore = Math.max(...state.scores);
+                    const winners = state.scores.map((s, i) => s === maxScore ? \`P\${i+1}\` : null).filter(Boolean);
+                    state.message = \`🎉 게임 종료! 모든 땅이 점령되었습니다. 최종 우승은 \${winners.join(', ')} (점수: \${maxScore}점) 입니다! 🎉\`;
+                }
+            };
+
+            const rollDice = () => {
+                const s = { ...gameState };
+                const diceRoll = Math.floor(Math.random() * 6) + 1;
+                s.lastDice = diceRoll;
+                const pIdx = s.currentTurn;
+                const oldPos = s.positions[pIdx];
+                let newPos = oldPos + diceRoll;
+
+                if (newPos >= BOARD_DATA.length) {
+                    newPos = newPos % BOARD_DATA.length;
+                    s.scores[pIdx] += 20;
+                    s.message = \`[P\${pIdx+1}] 출발선을 통과하여 월급 20점을 받았습니다! <br/>\`;
+                } else {
+                    s.message = \`[P\${pIdx+1}] \${BOARD_DATA[newPos].name}에 도착했습니다. <br/>\`;
+                }
+
+                s.positions[pIdx] = newPos;
+                const space = BOARD_DATA[newPos];
+                let turnEndsNow = true;
+
+                if (space.type === "감옥") {
+                    const event = JAIL_EVENTS[Math.floor(Math.random() * JAIL_EVENTS.length)];
+                    s.scores[pIdx] += event.penalty;
+                    s.message += \`🚨 <b>경찰서:</b> \${event.desc}\`;
+                } else if (space.type === "찬스") {
+                    const event = CHANCE_EVENTS[Math.floor(Math.random() * CHANCE_EVENTS.length)];
+                    s.message += \`🔑 <b>황금열쇠:</b> \${event.desc}\`;
+                    if (event.type === "normal") {
+                        s.scores[pIdx] += event.reward;
+                    } else if (event.type === "lose_space") {
+                        let lost = false;
+                        event.targets.forEach(ts => {
+                            if (s.ownedSpaces[ts] !== undefined) {
+                                const owner = s.ownedSpaces[ts];
+                                delete s.ownedSpaces[ts];
+                                s.message += \`<br/>➡ 앗! P\${owner+1}님이 소유했던 '\${BOARD_DATA[ts].name}'의 주인이 사라졌습니다!\`;
+                                lost = true;
+                            }
+                        });
+                        if (!lost) s.message += "<br/>➡ 아직 아무도 해당 구역을 소유하지 않아 무사히 넘어갑니다.";
+                    } else if (event.type === "branch_penalty") {
+                        const penalized = new Set();
+                        Object.entries(s.ownedSpaces).forEach(([sIdx, oIdx]) => {
+                            if (event.target_types.includes(BOARD_DATA[sIdx].type)) penalized.add(oIdx);
+                        });
+                        penalized.forEach(oIdx => {
+                            s.scores[oIdx] -= event.penalty;
+                            s.message += \`<br/>➡ P\${oIdx+1}님이 \${event.penalty}포인트를 잃었습니다.\`;
+                        });
+                        if (penalized.size === 0) s.message += "<br/>➡ 자격을 갖춘 플레이어가 없어 아무 일도 일어나지 않았습니다.";
+                    } else if (event.type === "teacher_eval") {
+                        s.teacherEvalPending = true;
+                        turnEndsNow = false;
+                    }
+                } else if (space.type !== "시작") {
+                    if (s.ownedSpaces[newPos] !== undefined) {
+                        const owner = s.ownedSpaces[newPos];
+                        if (owner === pIdx) s.message += "<br/>나의 구역입니다. 편안하게 휴식합니다.";
+                        else {
+                            s.message += \`<br/>앗! P\${owner+1}의 구역입니다. 통행료 5포인트를 지불합니다.\`;
+                            s.scores[pIdx] -= 5;
+                            s.scores[owner] += 5;
+                        }
+                    } else {
+                        s.currentQuiz = QUIZZES[Math.floor(Math.random() * QUIZZES.length)];
+                        turnEndsNow = false;
+                    }
+                }
+
+                if (turnEndsNow) {
+                    s.currentTurn = (pIdx + 1) % s.numPlayers;
+                    checkGameOver(s);
+                }
+                setGameState(s);
+            };
+
+            const submitQuiz = (answer) => {
+                const s = { ...gameState };
+                const pIdx = s.currentTurn;
+                if (answer === s.currentQuiz.answer) {
+                    s.scores[pIdx] += 15;
+                    s.ownedSpaces[s.positions[pIdx]] = pIdx;
+                    s.message = \`정답입니다! 15포인트를 획득하고 \${BOARD_DATA[s.positions[pIdx]].name}을(를) 점령했습니다.\`;
+                } else {
+                    s.scores[pIdx] -= 5;
+                    s.message = \`오답입니다. 올바른 정답은 '\${s.currentQuiz.answer}' 입니다. 5포인트를 잃었습니다.\`;
+                }
+                s.currentQuiz = null;
+                s.currentTurn = (pIdx + 1) % s.numPlayers;
+                checkGameOver(s);
+                setGameState(s);
+            };
+
+            const evalTeacher = (success) => {
+                const s = { ...gameState };
+                const pIdx = s.currentTurn;
+                if (success) {
+                    s.scores[pIdx] += 30;
+                    s.message = \`[P\${pIdx+1}] 미션 성공! 선생님의 인정으로 30포인트를 획득했습니다.\`;
+                } else {
+                    s.scores[pIdx] -= 10;
+                    s.message = \`[P\${pIdx+1}] 미션 실패! 10포인트가 차감되었습니다.\`;
+                }
+                s.teacherEvalPending = false;
+                s.currentTurn = (pIdx + 1) % s.numPlayers;
+                checkGameOver(s);
+                setGameState(s);
+            };
+
+            if (!gameState.started) {
+                return (
+                    <div className="container setup-screen">
+                        <a href="index.html" className="back-link">← 포트폴리오 메인으로 돌아가기</a>
+                        <h1>🏛️ 삼권분립 마블 보드게임</h1>
+                        <p style={{textAlign:'center', color:'#64748b'}}>플레이할 인원수를 선택하고 게임을 시작하세요.</p>
+                        <div style={{display:'flex', justifyContent:'center', gap:'10px'}}>
+                            {[2, 3, 4, 5].map(n => (
+                                <button key={n} className="btn" onClick={() => startGame(n)}>{n}명 플레이</button>
+                            ))}
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="container game-screen">
+                    <a href="index.html" className="back-link">← 포트폴리오 메인으로 돌아가기</a>
+                    <h1>🏛️ 삼권분립 마블</h1>
+                    
+                    <div className="score-board">
+                        {gameState.scores.map((score, i) => (
+                            <div key={i} className={\`score-card \${i === gameState.currentTurn && !gameState.gameOver ? 'active' : ''}\`} style={{backgroundColor: i === gameState.currentTurn ? '#eff6ff' : '#f8fafc', color: playerColors[i]}}>
+                                P{i+1} 점수: {score} {i === gameState.currentTurn ? '(현재 턴)' : ''}
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="board-grid">
+                        {BOARD_LAYOUT.map((row, rIdx) => 
+                            row.map((cellIdx, cIdx) => {
+                                if (cellIdx !== -1) {
+                                    const space = BOARD_DATA[cellIdx];
+                                    const playersHere = gameState.positions.map((p, i) => p === cellIdx ? i : -1).filter(i => i !== -1);
+                                    const owner = gameState.ownedSpaces[cellIdx];
+                                    
+                                    return (
+                                        <div key={\`cell-\${rIdx}-\${cIdx}\`} className="board-cell" style={{backgroundColor: colorMap[space.type]}}>
+                                            <div className="cell-title">{space.name}</div>
+                                            {owner !== undefined && <div className="cell-owner" style={{color: playerColors[owner]}}>[P{owner+1} 소유]</div>}
+                                            <div className="player-tokens">
+                                                {playersHere.map(p => (
+                                                    <div key={\`token-\${p}\`} className="token" style={{backgroundColor: playerColors[p]}}>P{p+1}</div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    );
+                                } else if (rIdx === 2 && cIdx === 2) {
+                                    return (
+                                        <div key="center" className="center-cell">
+                                            {gameState.gameOver ? (
+                                                <h2 style={{color: '#e74c3c'}}>게임 종료!</h2>
+                                            ) : (
+                                                <div>
+                                                    <h3 style={{color: playerColors[gameState.currentTurn], margin: '0 0 10px 0'}}>P{gameState.currentTurn+1} 차례</h3>
+                                                    <h1 style={{fontSize: '48px', margin: 0}}>🎲 {gameState.lastDice || '?'}</h1>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                }
+                                return <div key={\`empty-\${rIdx}-\${cIdx}\`} style={{background:'transparent'}}></div>;
+                            })
+                        )}
+                    </div>
+
+                    <div className="message-box" dangerouslySetInnerHTML={{__html: gameState.message}}></div>
+
+                    {!gameState.gameOver && (
+                        <div className="action-panel">
+                            {!gameState.currentQuiz && !gameState.teacherEvalPending && (
+                                <button className="btn" onClick={rollDice}>🎲 주사위 굴리기</button>
+                            )}
+
+                            {gameState.teacherEvalPending && (
+                                <div>
+                                    <h3 style={{color:'#ef4444', marginTop:0}}>👨‍🏫 선생님 평가 대기 중:</h3>
+                                    <p>[P{gameState.currentTurn+1}] 학생이 5초 안에 '입법부, 행정부, 사법부'를 정확히 말했나요?</p>
+                                    <div style={{display:'flex', gap:'10px'}}>
+                                        <button className="btn btn-success" style={{flex:1}} onClick={() => evalTeacher(true)}>⭕ 성공! (30포인트 획득)</button>
+                                        <button className="btn btn-danger" style={{flex:1}} onClick={() => evalTeacher(false)}>❌ 실패 (10포인트 차감)</button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {gameState.currentQuiz && (
+                                <div className="quiz-container">
+                                    <h3 style={{color:'#d97706', marginTop:0}}>⚠️ 퀴즈 도전!</h3>
+                                    <p><strong>문제:</strong> {gameState.currentQuiz.q}</p>
+                                    <div>
+                                        {gameState.currentQuiz.options.map((opt, i) => (
+                                            <button key={i} className="quiz-option" onClick={() => submitQuiz(opt)}>{opt}</button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>
