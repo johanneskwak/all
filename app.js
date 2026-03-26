@@ -371,6 +371,13 @@ function renderDashboard() {
                         <h3 style="font-size: 1.6rem; color: #fff; margin: 0;">글로벌 모의투자 보드게임</h3>
                         <p style="font-size: 1rem; color: #cbd5e1; margin-top: 0.5rem;">과거로 돌아가 거시경제 퀴즈를 맞히고 투자를 통해 자산을 불리세요.</p>
                     </div>
+
+                    <div class="glass-card menu-card" onclick="window.location.href='social_mock_trial.html'" style="flex: 1; min-width: 320px; padding: 2rem;">
+                        <div class="badge" style="background:#0284c7;">Law / Society Sim</div>
+                        <div style="font-size: 80px; margin: 10px 0;">🧑‍⚖️</div>
+                        <h3 style="font-size: 1.6rem; color: #fff; margin: 0;">사회 모의재판: 역전의 명수</h3>
+                        <p style="font-size: 1rem; color: #cbd5e1; margin-top: 0.5rem;">증거를 모으고 법정 공방을 통해 진실을 밝혀내는 법률 모의재판 게임입니다.</p>
+                    </div>
                 </div>
             </div>
             
