@@ -66,7 +66,14 @@
             color: #3498db;
         }
         .mystery-card { background: repeating-linear-gradient(45deg, #2c3e50, #2c3e50 10px, #34495e 10px, #34495e 20px); color: white; border: 2px solid #bdc3c7; height: 120px; width: 80px; display: flex; align-items: center; justify-content: center; font-size: 2em; border-radius: 8px; cursor: pointer; transition: transform 0.2s; box-shadow: 2px 2px 5px rgba(0,0,0,0.3); }
-        .mystery-card:hover { transform: translateY(-10px); }
+        .mystery-card:hover:not(.flipped) { transform: translateY(-10px); }
+        
+        .yugioh-card { background: radial-gradient(circle, #d35400, #c0392b); border: 4px solid #f1c40f; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); height: 150px; width: 105px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); position: relative; transform-style: preserve-3d; margin: 0 5px; }
+        .yugioh-card:hover:not(.flipped) { transform: translateY(-15px) rotateZ(3deg); box-shadow: 0 12px 20px rgba(0,0,0,0.4); }
+        .yugioh-card::after { content: "✨"; font-size: 3em; position: absolute; backface-visibility: hidden; }
+        .yugioh-card.flipped { transform: rotateY(180deg); cursor: default; }
+        .yugioh-card .card-content { background: #fff; border: 4px solid #3498db; color: #2c3e50; border-radius: 4px; box-sizing: border-box; width: 100%; height: 100%; position: absolute; top: 0; left: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 1.1em; font-weight: bold; transform: rotateY(180deg); backface-visibility: hidden; }
+
         @keyframes popIn { 0% { opacity: 0; transform: scale(0.5); } 100% { opacity: 1; transform: scale(1.1); } }
     </style>
     <!-- Lucide Icons -->
@@ -188,7 +195,19 @@
             <h1 id="univ-tier-title" style="color: #c0392b; font-size: 2em; margin: 10px 0;">계산 중...</h1>
             <p id="univ-reward-desc" style="font-weight: bold;"></p>
         </div>
-        <button onclick="startJobQuiz()">취업 준비 (면접 퀴즈) 시작</button>
+        <button id="btn-to-friend-draw" onclick="startFriendDraw()" style="display:none; background-color:#e67e22;">캠퍼스 인맥 획득 페이즈</button>
+        <button id="btn-to-job-direct" onclick="startJobQuiz()" style="display:none;">바로 취업 준비 시작</button>
+    </div>
+
+    <div id="step-draw-friends" class="step">
+        <h2>★ 캠퍼스 인맥 드로우 ★</h2>
+        <p id="friend-draw-desc" style="font-size: 1.05em; color: #2c3e50; line-height:1.5;"></p>
+        
+        <div id="friend-cards-container" style="display: flex; gap: 5px; justify-content: center; margin: 25px 0; perspective: 1000px;">
+            <!-- JS Inject -->
+        </div>
+
+        <button id="btn-to-job" onclick="startJobQuiz()" style="display: none; background-color: #27ae60;">취업 면접 (타임어택) 시작하기</button>
     </div>
 
     <div id="step-job-quiz" class="step">
@@ -365,6 +384,7 @@
             eduLevel: 0,
             univMultiplier: 1,
             friendCards: 0,
+            friendPicksAllowed: 0,
             univTierText: '',
             jobQuizScore: 0,
             jobQuizCorrectCount: 0,
@@ -546,22 +566,79 @@
             if (score === 6) tier = 2; else if (score >= 4) tier = 3; else tier = 4;
         }
 
+        let picks = 0;
         if (tier === 1) { 
-            currentData.univMultiplier = 1.5; currentData.friendCards = 3; currentData.univTierText = "티어 1 명문대"; 
+            currentData.univMultiplier = 1.5; picks = 3; currentData.univTierText = "티어 1 명문대"; 
         } else if (tier === 2) { 
-            currentData.univMultiplier = 1.3; currentData.friendCards = 2; currentData.univTierText = "티어 2 수도권대"; 
+            currentData.univMultiplier = 1.3; picks = 2; currentData.univTierText = "티어 2 수도권대"; 
         } else if (tier === 3) { 
-            currentData.univMultiplier = 1.1; currentData.friendCards = 1; currentData.univTierText = "티어 3 지거국"; 
+            currentData.univMultiplier = 1.1; picks = 1; currentData.univTierText = "티어 3 지거국"; 
         } else { 
-            currentData.univMultiplier = 1.0; currentData.friendCards = 0; currentData.univTierText = "티어 4 지방대"; 
+            currentData.univMultiplier = 1.0; picks = 0; currentData.univTierText = "티어 4 지방대"; 
         }  
+        
+        currentData.friendCards = 0;
+        currentData.friendPicksAllowed = picks;
 
         document.getElementById('suneung-score-result').innerText = `성적: 6문제 중 ${score}개 정답`;
         document.getElementById('univ-tier-title').innerText = `${currentData.univTierText} 진학!`;
-        document.getElementById('univ-reward-desc').innerText = `연봉 가중치 ${currentData.univMultiplier}배 / 인맥 카드 ${currentData.friendCards}장 획득`;
+        
+        if (picks > 0) {
+            document.getElementById('univ-reward-desc').innerText = `연봉 가중치 ${currentData.univMultiplier}배 확보! 이제 인맥을 뽑을 차례입니다.`;
+            document.getElementById('btn-to-friend-draw').style.display = 'block';
+            document.getElementById('btn-to-job-direct').style.display = 'none';
+        } else {
+            document.getElementById('univ-reward-desc').innerText = `연봉 가중치 ${currentData.univMultiplier}배 확보! 대학 인맥을 형성하지 못했습니다.`;
+            document.getElementById('btn-to-friend-draw').style.display = 'none';
+            document.getElementById('btn-to-job-direct').style.display = 'block';
+        }
         
         updateInventory();
         showStep('step-suneung-result');
+    }
+
+    let currentPicksLeft = 0;
+    
+    function startFriendDraw() {
+        currentPicksLeft = currentData.friendPicksAllowed;
+        
+        document.getElementById('friend-draw-desc').innerHTML = `<b>${currentData.univTierText}</b> 진학 보상: 캠퍼스 인맥 풀(Pool)<br>5장의 뒷면 카드 중 총 <b style="color:#e74c3c;">${currentPicksLeft}장</b>의 친구 카드를 뽑아주세요!`;
+        document.getElementById('btn-to-job').style.display = 'none';
+        
+        const container = document.getElementById('friend-cards-container');
+        container.innerHTML = '';
+        
+        const friendTypes = ["의대생", "법대 선배", "경영학과 동기", "금수저", "과탑 우등생"];
+        
+        for(let i = 0; i < 5; i++) {
+            let card = document.createElement('div');
+            card.className = 'yugioh-card';
+            
+            let content = document.createElement('div');
+            content.className = 'card-content';
+            let fType = friendTypes[Math.floor(Math.random() * friendTypes.length)];
+            content.innerHTML = `<span style="font-size:2.2em;">🤝</span><br>${fType}<br>획득!`;
+            card.appendChild(content);
+
+            card.onclick = () => {
+                if(card.classList.contains('flipped') || currentPicksLeft <= 0) return;
+                
+                card.classList.add('flipped');
+                currentData.friendCards++;
+                currentPicksLeft--;
+                updateInventory();
+                
+                document.getElementById('friend-draw-desc').innerHTML = `남은 드로우 기회: <b style="color:#e74c3c;">${currentPicksLeft}번</b>`;
+                
+                if (currentPicksLeft === 0) {
+                    document.getElementById('btn-to-job').style.display = 'block';
+                    document.getElementById('friend-draw-desc').innerHTML = `인맥 드로우 완료! 뽑은 카드는 인생의 위기 발생 시 방어 카드로 쓸 수 있습니다.`;
+                }
+            };
+            container.appendChild(card);
+        }
+        
+        showStep('step-draw-friends');
     }
 
     function startJobQuiz() {
