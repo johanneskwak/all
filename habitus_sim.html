@@ -65,6 +65,9 @@
         .back-nav a:hover {
             color: #3498db;
         }
+        .mystery-card { background: repeating-linear-gradient(45deg, #2c3e50, #2c3e50 10px, #34495e 10px, #34495e 20px); color: white; border: 2px solid #bdc3c7; height: 120px; width: 80px; display: flex; align-items: center; justify-content: center; font-size: 2em; border-radius: 8px; cursor: pointer; transition: transform 0.2s; box-shadow: 2px 2px 5px rgba(0,0,0,0.3); }
+        .mystery-card:hover { transform: translateY(-10px); }
+        @keyframes popIn { 0% { opacity: 0; transform: scale(0.5); } 100% { opacity: 1; transform: scale(1.1); } }
     </style>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -96,6 +99,29 @@
     </div>
 </div>
 
+<div id="theoryModal" class="modal">
+    <div class="modal-content" style="max-width: 550px;">
+        <h2 style="margin-top:0; color:#8e44ad;">📚 게임 속에 숨겨진 사회/경제학 이론</h2>
+        <div style="font-size: 0.95em; line-height: 1.6; color: #333; text-align: left; max-height: 60vh; overflow-y: auto;">
+            <p><b>1. 피에르 부르디외 (Pierre Bourdieu) - 자본과 아비투스</b></p>
+            <ul style="padding-left: 20px;">
+                <li><b>경제적 자본:</b> 룰렛으로 결정된 부모 재산. 높은 자본은 VVIP 사교육 등 우수한 출발선을 제공합니다.</li>
+                <li><b>문화적 자본:</b> 학력(명문대 티어). 대학 입학의 우위와 임금 격차(연봉 가중치)를 결정하며 계급을 공고히 합니다.</li>
+                <li><b>사회적 자본:</b> 대학에서 얻은 '인맥(친구) 카드'. 위기 상황에서 강력한 지인 방어 수단으로 작용합니다.</li>
+            </ul>
+            <p><b>2. 게리 베커 (Gary Becker) - 인적 자본론</b></p>
+            <ul style="padding-left: 20px;">
+                <li>교육과 개인의 노력으로 향상된 능력이 곧 경제적 수익의 원천이자 가치라는 인간 자본주의 이론입니다. <b>취업 면접 타임어택 퀴즈</b>에서의 빠르고 정확한 문제 풀이가 개인의 가치(보너스 상금, 직업 드래프트 순위)를 상승시키는 메커니즘으로 구현되었습니다.</li>
+            </ul>
+            <p><b>3. 제임스 콜맨 (James Coleman) - 사회적 자본의 기능</b></p>
+            <ul style="padding-left: 20px;">
+                <li>개인 간 네트워크가 정보 획득과 보호막에 결정적 영향을 미친다는 이론. 명문 대학 진학 시 더 많이 주어지는 <b>'친구 카드'</b>가 인생의 예기치 못한 치명적인 재난(법적 분쟁, 사업 실패, 질병 등) 턴에서 유저의 자산을 극적으로 방어해내는 자원(Resource)으로 반영되어 있습니다.</li>
+            </ul>
+        </div>
+        <button onclick="closeTheoryModal()" style="background-color: #34495e; margin-top: 15px;">닫기</button>
+    </div>
+</div>
+
 <div class="container">
     
     <div id="inventory-bar" class="inventory" style="display: none;">
@@ -115,13 +141,21 @@
     <div id="step-start" class="step">
         <h2 id="team-indicator">1조 시작하기</h2>
         <p>1단계: 태어난 환경을 무작위로 결정합니다.</p>
-        <button onclick="nextStep('step-heritage')">부모 재산 및 형제 수 뽑기</button>
+        <button onclick="goToHeritagePhase()">부모 재산 룰렛 돌리기</button>
     </div>
 
     <div id="step-heritage" class="step">
         <h2>태어난 환경 결과</h2>
-        <div id="heritage-result" style="font-size: 1.1em; line-height: 1.6; margin-bottom: 20px;"></div>
-        <button onclick="showEduOptions()">입시 사교육 결정하기</button>
+        
+        <div id="roulette-container" style="background:#fff; border: 3px solid #f39c12; border-radius:10px; padding:15px; margin-bottom:15px; font-size:1.5em; font-weight:bold; color:#e67e22; height: 35px; overflow: hidden; position: relative; display: none;">
+            <div id="roulette-text" style="position: absolute; width: 100%; text-align: center; left: 0;">?</div>
+        </div>
+        <button id="btn-roll-dice" onclick="startDice()" style="display:none; background-color:#8e44ad;">형제 수 주사위 던지기 🎲</button>
+        
+        <div id="dice-container" style="display:none; font-size:4em; margin: 10px 0;">🎲</div>
+        
+        <div id="heritage-result" style="font-size: 1.1em; line-height: 1.6; margin-bottom: 20px; display: none;"></div>
+        <button id="btn-to-edu" onclick="showEduOptions()" style="display:none;">입시 사교육 결정하기</button>
     </div>
 
     <div id="step-edu" class="step">
@@ -136,8 +170,10 @@
     </div>
 
     <div id="step-suneung-quiz" class="step">
-        <h2>대학 수학 능력 시험</h2>
+        <h2>대학 입학 시험 (사회탐구 영역)</h2>
         <p id="suneung-target-msg" style="font-size: 0.9em; color: #8e44ad; font-weight: bold;"></p>
+        <p style="font-size: 0.9em; color: #e74c3c; font-weight: bold;">[타임어택] 10초 내에 풀수록 추가 상금이 부여됩니다!</p>
+        <div id="suneung-timer-display" style="font-size: 1.3em; font-weight: bold; color: white; background-color: #e74c3c; padding: 5px 15px; border-radius: 20px; display: inline-block; margin-bottom: 15px;">남은 시간: 10초</div>
         <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 15px;">
             <h3 id="suneung-quiz-question" style="margin-top: 0; line-height: 1.4; word-break: keep-all;">질문</h3>
             <div id="suneung-quiz-options" style="display: flex; flex-direction: column;"></div>
@@ -156,8 +192,9 @@
     </div>
 
     <div id="step-job-quiz" class="step">
-        <h2>취업 면접 퀴즈</h2>
-        <p style="font-size: 0.9em; color: #7f8c8d;">정답 1개당 1,000만 원 보너스!<br>또한 점수는 '직업 선택 드래프트' 순위의 기준이 됩니다.</p>
+        <h2>회사 입사 시험 (NCS 및 논리 적성)</h2>
+        <p style="font-size: 0.9em; color: #7f8c8d;">정답 1개당 1,000만 원 보너스!<br>또한 <b>빨리 풀수록 남은 시간에 비례하여 가산점과 추가 상금이 부여됩니다!</b></p>
+        <div id="job-timer-display" style="font-size: 1.3em; font-weight: bold; color: white; background-color: #27ae60; padding: 5px 15px; border-radius: 20px; display: inline-block; margin-bottom: 15px;">남은 시간: 180초</div>
         <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 15px;">
             <h3 id="job-quiz-question" style="margin-top: 0; line-height: 1.4; word-break: keep-all;">질문</h3>
             <div id="job-quiz-options" style="display: flex; flex-direction: column;"></div>
@@ -180,11 +217,14 @@
 
     <div id="step-event" class="step">
         <h2>인생의 위기</h2>
-        <p>선택한 삶의 궤적에 위기가 찾아왔습니다.</p>
-        <button id="btn-draw-event" onclick="drawEvent()">재난 카드 뽑기</button>
+        <p style="font-size: 0.9em;">선택한 삶에 위기가 찾아왔습니다! 5장의 카드 중 하나를 골라 재난을 확인하세요.</p>
+        
+        <div id="event-cards-container" style="display: flex; gap: 10px; justify-content: center; margin: 20px 0;">
+            <!-- JS Inject -->
+        </div>
         
         <div id="event-display" style="display: none;">
-            <div id="event-card" class="event-card">이벤트 내용</div>
+            <div id="event-card" class="event-card" style="transform: scale(1.1); animation: popIn 0.5s ease;">이벤트 내용</div>
             <p id="event-desc" style="font-weight: bold;"></p>
             <div id="event-actions"></div>
         </div>
@@ -199,7 +239,8 @@
     <div id="step-ranking" class="step">
         <h2>모든 조 게임 종료: 최종 랭킹</h2>
         <div id="ranking-list" style="margin-bottom: 20px; text-align: left;"></div>
-        <button onclick="location.reload()">게임 처음부터 다시 하기</button>
+        <button onclick="openTheoryModal()" style="background-color: #8e44ad; font-size: 1.1em; margin-bottom: 15px;">📚 게임 속 사회학/경제학 이론 보기</button>
+        <button onclick="location.reload()" style="background-color: #2c3e50;">게임 처음부터 다시 하기</button>
     </div>
 
 </div>
@@ -214,6 +255,14 @@
     
     function closeSourceModal() {
         document.getElementById('sourceModal').style.display = 'none';
+    }
+    
+    function openTheoryModal() {
+        document.getElementById('theoryModal').style.display = 'flex';
+    }
+    
+    function closeTheoryModal() {
+        document.getElementById('theoryModal').style.display = 'none';
     }
 
     let totalTeams = 4;
@@ -244,26 +293,59 @@
         { name: "자녀 사교육 및 유학 (교육비)", penalty: 500000000, relatedJob: "교사" }
     ];
 
-    const suneungQuizQuestions = [
-        { q: "대한민국 헌법 제1조 1항, '대한민국은 ( )이다.' 빈칸에 알맞은 말은?", options: ["민주공화국", "입헌군주국", "자본주의국가", "복지국가"], answer: 0 },
-        { q: "달리기 경주에서 2등을 추월했습니다. 당신은 현재 몇 등인가요?", options: ["1등", "2등", "3등", "알 수 없음"], answer: 1 },
-        { q: "다음 중 태양계 행성 분류에서 제외되어 왜소행성으로 강등된 것은?", options: ["천왕성", "해왕성", "명왕성", "토성"], answer: 2 },
-        { q: "세계에서 가장 넓은 면적을 가진 나라는 어디일까요?", options: ["미국", "중국", "캐나다", "러시아"], answer: 3 },
-        { q: "이 게임의 핵심 주제인 '아비투스(Habitus)' 개념을 정립한 프랑스의 사회학자는?", options: ["칼 마르크스", "피에르 부르디외", "막스 베버", "오귀스트 콩트"], answer: 1 },
-        { q: "어떤 달에는 30일이 있고, 어떤 달에는 31일이 있습니다. 그렇다면 28일이 있는 달은 1년에 몇 번 있을까요?", options: ["1번", "4번", "6번", "12번"], answer: 3 }
+    const suneungPool = [
+        { q: "[정치] 국가의 3요소에 해당하지 않는 것은?", options: ["국민", "영토", "주권", "동맹국"], answer: 3 },
+        { q: "[경제] 물가가 지속적으로 상승하여 화폐 가치가 떨어지는 현상은?", options: ["디플레이션", "인플레이션", "리세션", "스태그플레이션"], answer: 1 },
+        { q: "[사회문화] 개인의 지위를 결정할 때 혈통, 가문 등 선천적인 요소를 중시하는 사회는?", options: ["성취 지위 사회", "귀속 지위 사회", "정보화 사회", "다원화 사회"], answer: 1 },
+        { q: "[법과사회] 범죄 성립의 3요소가 아닌 것은?", options: ["구성요건 해당성", "위법성", "책임성", "고의성"], answer: 3 },
+        { q: "[경제] 다른 조건이 일정할 때, 상품의 가격이 오르면 수요량은 감소하는 원리는?", options: ["수요의 법칙", "공급의 법칙", "한계효용 체감의 법칙", "비교우위의 원리"], answer: 0 },
+        { q: "[정치] 행정부의 최고 심의 기관이자 국정의 기본 계획을 의논하는 곳은?", options: ["국회", "대법원", "헌법재판소", "국무회의"], answer: 3 },
+        { q: "[사회문화] 서로 다른 문화가 만나 양쪽의 문화 요소가 합쳐져 제3의 새로운 문화가 형성되는 것은?", options: ["문화 동화", "문화 병존", "문화 융합", "문화 지체"], answer: 2 },
+        { q: "[법과사회] 민법상 불법행위로 인해 타인에게 손해를 가했을 때 지는 책임은?", options: ["손해배상 책임", "원상회복 책임", "형벌 부과", "행정 처분"], answer: 0 },
+        { q: "[경제] 경제 성장으로 환경 오염이 심해지다가 다시 개선된다는 가설 곡선은?", options: ["로렌츠 곡선", "환경 쿠즈네츠 곡선", "래퍼 곡선", "필립스 곡선"], answer: 1 },
+        { q: "[정치] 법률이 헌법에 합치하는지 여부를 심판하는 기관은?", options: ["대법원", "검찰청", "헌법재판소", "감사원"], answer: 2 },
+        { q: "[법과사회] 근로자의 기본적 노동 조건(임금, 노동시간 등)의 최저기준을 정한 법은?", options: ["민법", "근로기준법", "노동조합법", "최저임금법"], answer: 1 },
+        { q: "[사회문화] 목표 달성을 위해 규칙, 절차, 형식적 인간관계를 중시하는 현대의 지배적 조직 형태는?", options: ["자발적 결사체", "관료제", "아노미", "다원주의"], answer: 1 }
     ];
+
+    const jobPool = [
+        { q: "[LEET 논리] A가 1등이면 B는 2등이 아니다. B가 2등이면 C는 3등이다. C가 3등이 아니라면 확실히 알 수 있는 것은?", options: ["A는 1등이 아니다", "B는 2등이다", "C는 1등이다", "알 수 없다"], answer: 0 },
+        { q: "[NCS 수리] 전체 직원의 60%가 남성이다. 남성의 20%, 여성의 10%가 영업부에 속할 때, 전체 중 영업부 비율은?", options: ["12%", "16%", "20%", "24%"], answer: 1 },
+        { q: "[LEET 명제] '비가 오면 길이 막힌다'가 참일 때 반드시 참인 것은?", options: ["길이 막히면 비가 왔다", "비가 오지 않으면 길이 막히지 않는다", "길이 막히지 않으면 비가 오지 않은 것이다", "막히는 길에는 비가 온다"], answer: 2 },
+        { q: "[NCS 상황] 회의실을 A, B, C가 차례대로 쓴다. B는 13시에 와서 2시간 쓰고 C는 B 바로 뒤에 쓴다. A가 오전에 1시간 썼다면, C의 시작 시간은?", options: ["14시", "15시", "16시", "알 수 없다"], answer: 1 },
+        { q: "[LEET 추리] 용의자 3명 중 1명만 진실을 말하고, 범인도 1명이다. 갑: '을이 범인이다' 을: '나는 아니다' 병: '나는 아니다'. 범인은?", options: ["갑", "을", "병", "모두 아니다"], answer: 2 },
+        { q: "[NCS 자원] 10,000원짜리 물건에 20% 이익을 붙여 정가를 정한 뒤 안 팔려 정가에서 10% 할인해 팔았다. 최종 이익금은?", options: ["800원", "1,000원", "1,200원", "2,000원"], answer: 0 },
+        { q: "[NCS 수리] 올해 A기업 매출이 작년(500억)보다 10% 증가했고 비용은 작년(400억)보다 5% 증가했다. 올해 영업이익은 얼마인가?", options: ["100억", "110억", "120억", "130억"], answer: 3 },
+        { q: "[LEET 언어] '모든 고양이는 귀엽다'와 '어떤 동물은 귀엽지 않다'가 참일 때 도출되는 결론은?", options: ["모든 동물은 고양이다", "어떤 고양이는 동물이 아니다", "어떤 동물은 고양이가 아니다", "모든 귀여운 것은 고양이다"], answer: 2 },
+        { q: "[NCS 해결] 5명이 회의 전 한 번씩 전부 악수한다면 총 악수 횟수는?", options: ["10번", "15번", "20번", "25번"], answer: 0 },
+        { q: "[LEET 분석] 다음 중 결론이 반드시 참이 아닌 것은? '모든 새는 날 수 있다. X는 날 수 있다'고 할 때...", options: ["X는 뱀이다", "X는 타조다", "X는 비행기다", "X가 새인지는 알 수 없다"], answer: 3 }
+    ];
+
+    let currentSuneungQuestions = [];
     let suneungQuizIndex = 0;
     let suneungQuizScore = 0;
 
-    const jobQuizQuestions = [
-        { q: "물가가 지속적으로 하락하여 경제 활동이 침체되는 현상을 무엇이라고 합니까?", options: ["인플레이션", "스태그플레이션", "디플레이션", "리세션"], answer: 2 },
-        { q: "직장 상사나 외부 손님에게 명함을 건넬 때 올바른 예절은?", options: ["명함에 글씨를 쓰면서 건넨다", "아랫사람이 윗사람에게 먼저 건넨다", "한 손으로 가볍게 건넨다", "상대방이 읽기 불편한 방향으로 건넨다"], answer: 1 },
-        { q: "2024년 기준, 대한민국의 법정 1주 기본 근로시간은 몇 시간입니까? (연장근로 제외)", options: ["35시간", "40시간", "45시간", "52시간"], answer: 1 },
-        { q: "회사의 재무 상태를 파악하기 위해 '자산, 부채, 자본'을 나타내는 재무제표의 이름은?", options: ["손익계산서", "현금흐름표", "재무상태표(대차대조표)", "자본변동표"], answer: 2 },
-        { q: "A씨는 10층 아파트에 삽니다. 비가 오는 날에만 엘리베이터를 10층까지 타고, 맑은 날에는 7층까지만 탄 뒤 걸어 올라갑니다. 왜 그럴까요?", options: ["운동을 하려고", "7층에 친구가 살아서", "엘리베이터 고장이 잦아서", "키가 작아 10층 버튼에 손이 안 닿아서 (우산으로 누름)"], answer: 3 }
-    ];
+    let currentJobQuestions = [];
     let jobQuizIndex = 0;
     let jobQuizScore = 0;
+    let jobQuizCorrectCount = 0;
+    
+    let currentTimerSeconds = 0;
+    let timerInterval = null;
+
+    function resetAndStartTimer(duration, displayId, timeoutCallback) {
+        clearInterval(timerInterval);
+        currentTimerSeconds = duration;
+        document.getElementById(displayId).innerText = `남은 시간: ${currentTimerSeconds}초`;
+        timerInterval = setInterval(() => {
+            currentTimerSeconds--;
+            document.getElementById(displayId).innerText = `남은 시간: ${currentTimerSeconds}초`;
+            if (currentTimerSeconds <= 0) {
+                clearInterval(timerInterval);
+                timeoutCallback();
+            }
+        }, 1000);
+    }
 
     function formatMoney(amount) {
         if (amount <= 0) return "0원";
@@ -285,6 +367,7 @@
             friendCards: 0,
             univTierText: '',
             jobQuizScore: 0,
+            jobQuizCorrectCount: 0,
             diceRoll: 0, 
             jobName: '',
             jobSalary: 0,
@@ -329,23 +412,59 @@
         showStep('step-start');
     }
 
+    let globalParentWealth = 0;
+
     function nextStep(stepId) {
-        if (stepId === 'step-heritage') rollHeritage();
         showStep(stepId);
     }
 
-    function rollHeritage() {
-        const parentWealth = wealthArray[Math.floor(Math.random() * wealthArray.length)];
-        const siblings = Math.floor(Math.random() * 6) + 1;
-        currentData.initialWealth = Math.floor(parentWealth / siblings);
-        currentData.currentWealth = currentData.initialWealth;
-
-        document.getElementById('heritage-result').innerHTML = 
-            `부모 재산: <b>${formatMoney(parentWealth)}</b><br>` +
-            `형제자매 수: <b>${siblings}명</b> (본인 포함)<br><br>` +
-            `내게 주어진 초기 자본: <br><b style="color:#2980b9; font-size:1.3em;">${formatMoney(currentData.initialWealth)}</b>`;
+    function goToHeritagePhase() {
+        showStep('step-heritage');
+        document.getElementById('roulette-container').style.display = 'block';
+        document.getElementById('roulette-text').innerText = '... 룰렛 회전 중 ...';
+        document.getElementById('btn-roll-dice').style.display = 'none';
+        document.getElementById('dice-container').style.display = 'none';
+        document.getElementById('heritage-result').style.display = 'none';
+        document.getElementById('btn-to-edu').style.display = 'none';
         
-        updateInventory();
+        let ticks = 0;
+        let rInterval = setInterval(() => {
+            document.getElementById('roulette-text').innerText = formatMoney(wealthArray[Math.floor(Math.random() * wealthArray.length)]);
+            ticks++;
+            if(ticks > 20) {
+                clearInterval(rInterval);
+                globalParentWealth = wealthArray[Math.floor(Math.random() * wealthArray.length)];
+                document.getElementById('roulette-text').innerText = `당첨! ${formatMoney(globalParentWealth)}`;
+                document.getElementById('btn-roll-dice').style.display = 'block';
+            }
+        }, 80);
+    }
+    
+    function startDice() {
+        document.getElementById('btn-roll-dice').style.display = 'none';
+        document.getElementById('dice-container').style.display = 'block';
+        let ticks = 0;
+        const diceFaces = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
+        let dInterval = setInterval(() => {
+            document.getElementById('dice-container').innerText = diceFaces[Math.floor(Math.random() * 6)];
+            ticks++;
+            if(ticks > 15) {
+                clearInterval(dInterval);
+                const currentSiblings = Math.floor(Math.random() * 6) + 1;
+                document.getElementById('dice-container').innerText = `${diceFaces[currentSiblings-1]}`;
+                
+                currentData.initialWealth = Math.floor(globalParentWealth / currentSiblings);
+                currentData.currentWealth = currentData.initialWealth;
+        
+                document.getElementById('heritage-result').innerHTML = 
+                    `부모 재산: <b>${formatMoney(globalParentWealth)}</b><br>` +
+                    `형제자매 수: <b>${currentSiblings}명</b> (본인 포함)<br><br>` +
+                    `내게 주어진 초기 자본: <br><b style="color:#2980b9; font-size:1.3em;">${formatMoney(currentData.initialWealth)}</b>`;
+                document.getElementById('heritage-result').style.display = 'block';
+                document.getElementById('btn-to-edu').style.display = 'block';
+                updateInventory();
+            }
+        }, 100);
     }
 
     function showEduOptions() {
@@ -368,6 +487,7 @@
         
         document.getElementById('suneung-target-msg').innerText = targetMsg;
         
+        currentSuneungQuestions = [...suneungPool].sort(() => Math.random() - 0.5).slice(0, 6);
         suneungQuizIndex = 0;
         suneungQuizScore = 0;
         showStep('step-suneung-quiz');
@@ -375,11 +495,11 @@
     }
 
     function renderSuneungQuiz() {
-        if (suneungQuizIndex >= suneungQuizQuestions.length) {
+        if (suneungQuizIndex >= currentSuneungQuestions.length) {
             finishSuneungQuiz();
             return;
         }
-        const qData = suneungQuizQuestions[suneungQuizIndex];
+        const qData = currentSuneungQuestions[suneungQuizIndex];
         document.getElementById('suneung-quiz-question').innerText = `Q${suneungQuizIndex + 1}. ${qData.q}`;
         document.getElementById('suneung-quiz-progress').innerText = `진행: ${suneungQuizIndex + 1} / 6 문항`;
         
@@ -391,11 +511,23 @@
             btn.className = 'quiz-option';
             btn.innerText = opt;
             btn.onclick = () => {
-                if (idx === qData.answer) suneungQuizScore++;
+                clearInterval(timerInterval);
+                if (idx === qData.answer) {
+                    suneungQuizScore++;
+                    if (currentTimerSeconds > 0) {
+                        currentData.currentWealth += (currentTimerSeconds * 1000000);
+                        updateInventory();
+                    }
+                }
                 suneungQuizIndex++;
                 renderSuneungQuiz();
             };
             optionsContainer.appendChild(btn);
+        });
+        
+        resetAndStartTimer(10, 'suneung-timer-display', () => {
+            suneungQuizIndex++;
+            renderSuneungQuiz();
         });
     }
 
@@ -433,18 +565,20 @@
     }
 
     function startJobQuiz() {
+        currentJobQuestions = [...jobPool].sort(() => Math.random() - 0.5).slice(0, 5);
         jobQuizIndex = 0;
         jobQuizScore = 0;
+        jobQuizCorrectCount = 0;
         showStep('step-job-quiz');
         renderJobQuiz();
     }
 
     function renderJobQuiz() {
-        if (jobQuizIndex >= jobQuizQuestions.length) {
+        if (jobQuizIndex >= currentJobQuestions.length) {
             finishJobQuiz();
             return;
         }
-        const qData = jobQuizQuestions[jobQuizIndex];
+        const qData = currentJobQuestions[jobQuizIndex];
         document.getElementById('job-quiz-question').innerText = `Q${jobQuizIndex + 1}. ${qData.q}`;
         document.getElementById('job-quiz-progress').innerText = `진행: ${jobQuizIndex + 1} / 5 문항`;
         
@@ -456,20 +590,31 @@
             btn.className = 'quiz-option';
             btn.innerText = opt;
             btn.onclick = () => {
-                if (idx === qData.answer) jobQuizScore++;
+                clearInterval(timerInterval);
+                if (idx === qData.answer) {
+                    jobQuizCorrectCount++;
+                    jobQuizScore += (1000 + currentTimerSeconds);
+                    const bonusMoney = 10000000 + (currentTimerSeconds * 100000);
+                    currentData.currentWealth += bonusMoney;
+                    updateInventory();
+                }
                 jobQuizIndex++;
                 renderJobQuiz();
             };
             optionsContainer.appendChild(btn);
         });
+
+        resetAndStartTimer(180, 'job-timer-display', () => {
+            jobQuizIndex++;
+            renderJobQuiz();
+        });
     }
 
     function finishJobQuiz() {
         currentData.jobQuizScore = jobQuizScore;
-        const bonusMoney = jobQuizScore * 10000000;
-        currentData.currentWealth += bonusMoney;
+        currentData.jobQuizCorrectCount = jobQuizCorrectCount;
         
-        alert(`[취업 퀴즈 완료] ${jobQuizScore}문제 정답!\n축하금 ${formatMoney(bonusMoney)} 확보. 드래프트 준비를 마쳤습니다.`);
+        alert(`[취업 퀴즈 완료] 총 ${jobQuizCorrectCount}문제 정답!\n드래프트 점수: ${jobQuizScore}점 (타임 보너스 적용)`);
         
         teamDataList.push(currentData);
         hideInventory();
@@ -500,7 +645,7 @@
             let color = index === 0 ? '#f1c40f' : 'transparent';
             draftDiv.innerHTML += `
                 <div class="ranking-item" style="border-left-color: ${index === 0 ? color : '#bdc3c7'};">
-                    <span><b>${index + 1}순위: ${t.team}조</b> (면접 ${t.jobQuizScore}점)</span>
+                    <span><b>${index + 1}순위: ${t.team}조</b> (면접 ${t.jobQuizScore}점 / 정답 ${t.jobQuizCorrectCount}개)</span>
                     <span style="color: #8e44ad; font-size: 0.9em;">보정 주사위: ${t.diceRoll}</span>
                 </div>
             `;
@@ -535,14 +680,24 @@
         currentData.jobName = jobs[index].name;
         currentData.jobSalary = jobs[index].salary;
         
-        document.getElementById('btn-draw-event').style.display = 'block';
+        document.getElementById('event-cards-container').style.display = 'flex';
         document.getElementById('event-display').style.display = 'none';
+        
+        const container = document.getElementById('event-cards-container');
+        container.innerHTML = '';
+        for(let i = 0; i < 5; i++) {
+            let card = document.createElement('div');
+            card.className = 'mystery-card';
+            card.innerText = '?';
+            card.onclick = () => drawEvent(card);
+            container.appendChild(card);
+        }
         
         showStep('step-event');
     }
 
-    function drawEvent() {
-        document.getElementById('btn-draw-event').style.display = 'none';
+    function drawEvent(clickedCard) {
+        document.getElementById('event-cards-container').style.display = 'none';
         
         const randomEvent = events[Math.floor(Math.random() * events.length)];
         currentData.eventName = randomEvent.name;
