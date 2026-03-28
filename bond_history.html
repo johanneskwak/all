@@ -8,8 +8,6 @@
     <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;700;900&display=swap');
         body { font-family: 'Pretendard', sans-serif; background-color: #f2f6fd; color: #172341; }
@@ -57,9 +55,6 @@
         }};
         const AnimatePresence = ({children}) => <>{children}</>;
         
-        // Prevent top-level destructuring crash if jsPDF CDN is blocked
-        const jsPDF = window.jspdf ? window.jspdf.jsPDF : null;
-
         // Constants and Data
         const BEGINNER_EXPLAINERS = {
             "디플레이션": "물가가 내려가면 미래에 받을 고정 이자의 가치가 커져 국채가 유리해집니다.",
@@ -192,7 +187,6 @@
                             <div className="flex flex-wrap gap-2">
                                 <span className="chip">학생용/교사용</span>
                                 <span className="chip">포트폴리오 추적</span>
-                                <span className="chip">학습 리포트 PDF</span>
                                 <span className="chip">미니 퀴즈 보상</span>
                             </div>
                         </div>
@@ -246,28 +240,6 @@
                 const returnPct = (ratio - 1) * 100;
                 const endData = getEnding(ratio);
 
-                const downloadPDF = () => {
-                    if (!jsPDF) {
-                        alert("PDF 저장 라이브러리를 불러오지 못했습니다. (네트워크 혹은 차단장치 확인)");
-                        return;
-                    }
-                    const doc = new jsPDF();
-                    doc.setFontSize(20);
-                    doc.text("Bond History Game Result", 20, 20);
-                    
-                    doc.setFontSize(12);
-                    doc.text(`Final Balance: ${(balance/100).toFixed(1)} hundred million KRW`, 20, 35);
-                    doc.text(`Total Return: ${returnPct.toFixed(1)}%`, 20, 42);
-                    doc.text(`Rank: ${endData.grade} - ${endData.title}`, 20, 49);
-                    doc.text(`Correct Decisions: ${correctCount}/${SCENARIOS.length}`, 20, 56);
-
-                    const tableData = logs.map(l => [l.turn, l.year, l.choice, (l.returnAmt * 100).toFixed(1)+'%', l.correct ? '✔' : '✖']);
-                    doc.autoTable({
-                        startY: 70, head: [['Turn', 'Year', 'Choice', 'Return', 'Correct']], body: tableData
-                    });
-                    doc.save("Bond_History_Report.pdf");
-                };
-
                 return (
                     <motion.div initial={{opacity:0, y:20}} animate={{opacity:1, y:0}} className="max-w-4xl mx-auto bg-white rounded-3xl p-10 border shadow-2xl mt-10 text-center">
                         <div className="text-6xl mb-4">{endData.icon}</div>
@@ -289,7 +261,6 @@
 
                         <div className="flex gap-4 justify-center">
                             <button onClick={()=>window.location.reload()} className="px-6 py-3 bg-gray-200 hover:bg-gray-300 rounded-xl font-bold">새 게임</button>
-                            <button onClick={downloadPDF} className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold">결과 리포트 PDF 다운로드</button>
                         </div>
                     </motion.div>
                 );
