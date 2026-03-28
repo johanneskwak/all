@@ -378,6 +378,13 @@ function renderDashboard() {
                         <h3 style="font-size: 1.6rem; color: #fff; margin: 0;">사회 모의재판: 역전의 명수</h3>
                         <p style="font-size: 1rem; color: #cbd5e1; margin-top: 0.5rem;">증거를 모으고 법정 공방을 통해 진실을 밝혀내는 법률 모의재판 게임입니다.</p>
                     </div>
+
+                    <div class="glass-card menu-card" onclick="window.location.href='bond_history.html'" style="flex: 1; min-width: 320px; padding: 2rem;">
+                        <div class="badge" style="background:#4f46e5;">Economy / History Sim</div>
+                        <div style="font-size: 80px; margin: 10px 0;">💵</div>
+                        <h3 style="font-size: 1.6rem; color: #fff; margin: 0;">채권 역사 프리미엄 게임</h3>
+                        <p style="font-size: 1rem; color: #cbd5e1; margin-top: 0.5rem;">연준의 역사적 결정 속에서 살아남아라. 채권을 직접 선택하며 배우는 인터랙티브 시뮬레이션입니다.</p>
+                    </div>
                 </div>
             </div>
             
