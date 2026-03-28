@@ -8,8 +8,6 @@
     <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://unpkg.com/framer-motion@10.16.4/dist/framer-motion.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <style>
@@ -48,8 +46,19 @@
 
     <script type="text/babel">
         const { useState, useEffect, useMemo, useRef } = React;
-        const { motion, AnimatePresence } = window.Motion || { motion: { div: ({children, ...props}) => <div {...props}>{children}</div> }, AnimatePresence: ({children}) => <>{children}</> };
-        const { jsPDF } = window.jspdf;
+        // Fallback for framer-motion to prevent CDN loading errors resulting in a blank page
+        const motion = { div: ({children, ...props}) => {
+            const safeProps = {...props};
+            delete safeProps.initial;
+            delete safeProps.animate;
+            delete safeProps.exit;
+            delete safeProps.transition;
+            return <div {...safeProps}>{children}</div>;
+        }};
+        const AnimatePresence = ({children}) => <>{children}</>;
+        
+        // Prevent top-level destructuring crash if jsPDF CDN is blocked
+        const jsPDF = window.jspdf ? window.jspdf.jsPDF : null;
 
         // Constants and Data
         const BEGINNER_EXPLAINERS = {
@@ -238,6 +247,10 @@
                 const endData = getEnding(ratio);
 
                 const downloadPDF = () => {
+                    if (!jsPDF) {
+                        alert("PDF 저장 라이브러리를 불러오지 못했습니다. (네트워크 혹은 차단장치 확인)");
+                        return;
+                    }
                     const doc = new jsPDF();
                     doc.setFontSize(20);
                     doc.text("Bond History Game Result", 20, 20);
