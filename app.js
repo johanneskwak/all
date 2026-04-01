@@ -1,9 +1,10 @@
 const IMAGES = {
-  hero: "../../brain/cc78bc5f-a74c-4f47-9a5f-42a59db7db4b/hero_character_1773491055493.png",
-  swordsman: "../../brain/cc78bc5f-a74c-4f47-9a5f-42a59db7db4b/swordsman_character_1773491084149.png",
-  healer: "../../brain/cc78bc5f-a74c-4f47-9a5f-42a59db7db4b/healer_character_1773491098068.png",
-  wizard: "../../brain/cc78bc5f-a74c-4f47-9a5f-42a59db7db4b/wizard_character_1773491116790.png"
+  hero: "",
+  swordsman: "",
+  healer: "",
+  wizard: ""
 };
+
 
 /* --- DATA: Basic Test (RIASEC) --- */
 const riasecQuestions = [
