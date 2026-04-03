@@ -386,6 +386,13 @@ function renderDashboard() {
                         <h3 style="font-size: 1.6rem; color: #fff; margin: 0;">채권 역사 프리미엄 게임</h3>
                         <p style="font-size: 1rem; color: #cbd5e1; margin-top: 0.5rem;">연준의 역사적 결정 속에서 살아남아라. 채권을 직접 선택하며 배우는 인터랙티브 시뮬레이션입니다.</p>
                     </div>
+
+                    <div class="glass-card menu-card" onclick="window.open('https://historymonopoly.vercel.app/', '_blank')" style="flex: 1; min-width: 320px; padding: 2rem;">
+                        <div class="badge" style="background:#f59e0b;">History Monopoly</div>
+                        <div style="font-size: 80px; margin: 10px 0;">🌍</div>
+                        <h3 style="font-size: 1.6rem; color: #fff; margin: 0;">세계사 모노폴리</h3>
+                        <p style="font-size: 1rem; color: #cbd5e1; margin-top: 0.5rem;">유라시아 교역로를 장악하고 문명을 발전시켜 승리하세요.</p>
+                    </div>
                 </div>
             </div>
             
