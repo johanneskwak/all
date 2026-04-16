@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>세계사 모노폴리 - 유라시아 교류와 문명 에디션</title>
+    <meta name="description" content="세계사를 배경으로 한 모노폴리 보드 게임. 유라시아 교역로를 장악하고 문명을 발전시켜 승리하세요!">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Montserrat:wght@500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* 추가: 내비게이션 버튼 스타일 */
+        .nav-back-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            padding: 10px 18px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+        .nav-back-btn:hover {
+            background: var(--gold);
+            color: #000;
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+
+<!-- 상단 내비게이션 -->
+<a href="../index.html" class="nav-back-btn">
+    <i class="fa-solid fa-house"></i> 메인 대시보드
+</a>
+
+<!-- ========== START SCREEN ========== -->
+<div id="start-screen" class="screen active">
+    <!-- ... (이전 내용과 동일) ... -->
+    <div class="start-bg-effects">
+        <div class="floating-icon" style="top:10%;left:15%;animation-delay:0s;"><i class="fa-solid fa-landmark"></i></div>
+        <div class="floating-icon" style="top:20%;right:20%;animation-delay:1.5s;"><i class="fa-solid fa-scroll"></i></div>
+        <div class="floating-icon" style="bottom:25%;left:10%;animation-delay:3s;"><i class="fa-solid fa-ship"></i></div>
+        <div class="floating-icon" style="bottom:15%;right:15%;animation-delay:0.8s;"><i class="fa-solid fa-chess-rook"></i></div>
+        <div class="floating-icon" style="top:50%;left:5%;animation-delay:2s;"><i class="fa-solid fa-horse"></i></div>
+        <div class="floating-icon" style="top:40%;right:8%;animation-delay:4s;"><i class="fa-solid fa-dharmachakra"></i></div>
+    </div>
+    <div class="start-content">
+        <div class="start-logo">
+            <span class="logo-emoji">🌍</span>
+            <h1>세계사 <span class="gold-text">모노폴리</span></h1>
+            <p class="start-subtitle">유라시아 교류와 지역 문화의 발전 에디션</p>
+        </div>
+        <div class="start-features">
+            <div class="feature-tag"><i class="fa-solid fa-route"></i> 4대 교역로</div>
+            <div class="feature-tag"><i class="fa-solid fa-lightbulb"></i> 인류의 발명품</div>
+            <div class="feature-tag"><i class="fa-solid fa-city"></i> 문명 발전 단계</div>
+            <div class="feature-tag"><i class="fa-solid fa-dharmachakra"></i> 운명의 수레바퀴</div>
+        </div>
+        <div class="player-setup">
+            <h3>플레이어 수 선택</h3>
+            <div class="player-count-btns">
+                <button class="count-btn" onclick="setPlayerCount(2)">2명</button>
+                <button class="count-btn active" onclick="setPlayerCount(3)">3명</button>
+                <button class="count-btn" onclick="setPlayerCount(4)">4명</button>
+            </div>
+            <div id="player-names" class="player-names">
+                <!-- JS로 생성 -->
+            </div>
+            <button class="start-game-btn" onclick="startGame()">
+                <i class="fa-solid fa-play"></i> 게임 시작
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ========== GAME SCREEN ========== -->
+<div id="game-screen" class="screen">
+    <div class="game-layout">
+        <!-- LEFT: Player Info Panel -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2>🌍 세계사 모노폴리</h2>
+            </div>
+            <div id="player-panels" class="player-panels">
+                <!-- JS로 생성 -->
+            </div>
+            <div class="turn-info" id="turn-info">
+                <div class="current-turn">
+                    <span id="turn-number">TURN 1</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- CENTER: Board -->
+        <main class="board-container">
+            <div id="monopoly-board" class="monopoly-board">
+                <!-- JS로 보드 렌더링 -->
+            </div>
+        </main>
+
+        <!-- RIGHT: Action Panel -->
+        <aside class="action-panel" id="action-panel">
+            <div class="action-header">
+                <div class="current-player-indicator" id="current-player-name">
+                    <span class="player-dot" id="current-dot"></span>
+                    플레이어 1의 차례
+                </div>
+            </div>
+
+            <!-- Dice Area -->
+            <div class="dice-area" id="dice-area">
+                <div class="dice-display">
+                    <div class="die" id="die1">
+                        <span>⚀</span>
+                    </div>
+                    <div class="die" id="die2">
+                        <span>⚀</span>
+                    </div>
+                </div>
+                <button class="roll-btn" id="roll-btn" onclick="rollDice()">
+                    <i class="fa-solid fa-dice"></i> 주사위 굴리기
+                </button>
+            </div>
+
+            <!-- Action Buttons (dynamic) -->
+            <div class="action-buttons" id="action-buttons">
+                <!-- JS가 상황에 맞는 버튼 생성 -->
+            </div>
+
+            <!-- Game Log -->
+            <div class="game-log" id="game-log">
+                <h4><i class="fa-solid fa-scroll"></i> 역사 기록</h4>
+                <div class="log-entries" id="log-entries">
+                    <div class="log-entry">🌍 게임이 시작되었습니다!</div>
+                </div>
+            </div>
+        </aside>
+    </div>
+</div>
+
+<!-- ========== MODAL OVERLAY ========== -->
+<div class="modal-overlay" id="modal-overlay">
+    <div class="modal" id="modal">
+        <div class="modal-header" id="modal-header">
+            <span class="modal-icon" id="modal-icon">🏛️</span>
+            <h2 id="modal-title">이벤트</h2>
+        </div>
+        <div class="modal-body" id="modal-body">
+            <!-- Dynamic content -->
+        </div>
+        <div class="modal-actions" id="modal-actions">
+            <!-- Dynamic buttons -->
+        </div>
+    </div>
+</div>
+
+<!-- ========== CARD REVEAL OVERLAY ========== -->
+<div class="card-overlay" id="card-overlay">
+    <div class="card-reveal" id="card-reveal">
+        <div class="card-front" id="card-front">
+            <div class="card-header-bar" id="card-header-bar"></div>
+            <div class="card-icon-area" id="card-icon-area">
+                <i class="fa-solid fa-dharmachakra"></i>
+            </div>
+            <h3 class="card-name" id="card-name">카드 이름</h3>
+            <p class="card-desc" id="card-desc">카드 설명</p>
+            <div class="card-effect" id="card-effect">효과</div>
+            <button class="card-close-btn" id="card-close-btn" onclick="closeCard()">확인</button>
+        </div>
+    </div>
+</div>
+
+<!-- ========== GAME OVER SCREEN ========== -->
+<div id="gameover-screen" class="screen">
+    <div class="gameover-content">
+        <div class="trophy">🏆</div>
+        <h1 id="winner-name">플레이어 1</h1>
+        <h2>승리!</h2>
+        <p class="winner-subtitle">유라시아의 패권을 차지했습니다!</p>
+        <div class="winner-stats" id="winner-stats"></div>
+        <button class="start-game-btn" onclick="location.reload()">
+            <i class="fa-solid fa-rotate-right"></i> 다시 플레이
+        </button>
+    </div>
+</div>
+
+<script src="game.js"></script>
+</body>
+</html>

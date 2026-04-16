@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>⚓ 대항해시대: 무역의 지배자</title>
+  <meta name="description" content="15세기 대항해시대 역사 교육 무역 게임. 항구를 탐험하고 역사 퀴즈를 풀며 세계 무역의 패자가 되어라!">
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- ══════════════ TITLE SCREEN ══════════════ -->
+<div id="screen-title" class="screen">
+  <div class="title-overlay"></div>
+  <img src="images/banner.png" alt="대항해시대 배너" class="title-banner-img" onerror="this.style.display='none'">
+  <div class="title-content">
+    <div class="title-compass">⚓</div>
+    <h1 class="title-main">대항해시대</h1>
+    <p class="title-sub">무역의 지배자</p>
+    <p class="title-desc">
+      서기 1490년, 포르투갈 리스본.<br>
+      당신은 작은 카라벨 선박 한 척과 1,200금화를 손에 쥔 견습 선원이다.<br>
+      세계의 바다를 누비며 역사를 배우고, 무역의 제왕이 되어라.
+    </p>
+    <div class="title-buttons">
+      <button id="btn-start" class="btn-gold" onclick="startNewGame()">⛵ 새 항해 시작</button>
+      <button id="btn-load" class="btn-silver" onclick="loadSavedGame()">📂 저장 불러오기</button>
+    </div>
+    <div class="title-footer">
+      <span>🌊 8개의 항구</span> · <span>📚 15개의 역사 퀴즈</span> · <span>🎴 역사 인물 카드 수집</span> · <span>⚔️ 랜덤 이벤트</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ MAIN GAME SCREEN ══════════════ -->
+<div id="screen-game" class="screen hidden">
+
+  <!-- HUD Top Bar -->
+  <div id="hud">
+    <div class="hud-group">
+      <div class="hud-item gold-item">
+        <span class="hud-icon">💰</span>
+        <div>
+          <div class="hud-label">금화</div>
+          <div class="hud-val" id="hud-gold">1200G</div>
+        </div>
+      </div>
+      <div class="hud-item">
+        <span class="hud-icon">⭐</span>
+        <div>
+          <div class="hud-label">명성</div>
+          <div class="hud-val" id="hud-fame">0</div>
+        </div>
+      </div>
+    </div>
+    <div class="hud-center">
+      <div id="hud-rank-badge">견습 선원 ⛵</div>
+      <div id="fame-bar-wrap">
+        <div id="fame-bar-fill"></div>
+        <span id="fame-bar-label"></span>
+      </div>
+    </div>
+    <div class="hud-group">
+      <div class="hud-item">
+        <span class="hud-icon">📍</span>
+        <div>
+          <div class="hud-label">현재 위치</div>
+          <div class="hud-val" id="hud-location">리스본</div>
+        </div>
+      </div>
+      <div class="hud-item">
+        <span class="hud-icon">⛵</span>
+        <div>
+          <div class="hud-label">선박 / 적재</div>
+          <div class="hud-val" id="hud-ship">카라벨 (0/10)</div>
+        </div>
+      </div>
+      <div class="hud-item">
+        <span class="hud-icon">📅</span>
+        <div>
+          <div class="hud-label">항해일</div>
+          <div class="hud-val" id="hud-days">0일</div>
+        </div>
+      </div>
+    </div>
+    <div class="hud-actions">
+      <button class="hud-btn" onclick="openModal('modal-quests')" title="퀘스트">📜</button>
+      <button class="hud-btn" onclick="openModal('modal-achievements')" title="업적">🏆</button>
+      <button class="hud-btn" onclick="openModal('modal-collection')" title="인물 컬렉션">🎴</button>
+      <button class="hud-btn" onclick="openModal('modal-atlas')" title="역사 도감">📖</button>
+      <button class="hud-btn" onclick="saveGame()" title="저장">💾</button>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div id="game-body">
+
+    <!-- World Map -->
+    <div id="map-section">
+      <div id="map-container">
+        <img src="images/world_map.png" alt="세계 지도" id="map-img" onerror="this.style.display='none'">
+        <div id="map-overlay"></div>
+        <div id="port-markers-layer"></div>
+        <div id="ship-token">⛵</div>
+      </div>
+      <div id="map-legend">
+        <span class="legend-dot current-dot"></span> 현재 위치
+        <span class="legend-dot visited-dot"></span> 방문함
+        <span class="legend-dot unvisited-dot"></span> 미방문
+      </div>
+    </div>
+
+    <!-- Port Panel -->
+    <div id="port-panel">
+      <!-- Port Header with image -->
+      <div id="port-header">
+        <div id="port-img-bg"></div>
+        <div id="port-header-content">
+          <span id="port-header-emoji">🏛️</span>
+          <div>
+            <h2 id="port-header-name">리스본</h2>
+            <p id="port-header-desc">포르투갈 왕국의 수도</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div id="port-tabs">
+        <button class="tab-btn active" data-tab="trade" onclick="switchTab('trade', this)">⚖️ 교역</button>
+        <button class="tab-btn" data-tab="travel" onclick="switchTab('travel', this)">🗺️ 출항</button>
+        <button class="tab-btn" data-tab="history" onclick="switchTab('history', this)">📖 역사</button>
+        <button class="tab-btn" data-tab="shop" onclick="switchTab('shop', this)">🛠️ 상점</button>
+      </div>
+
+      <!-- Tab Contents -->
+      <div id="tab-content-area">
+
+        <div id="tab-trade" class="tab-pane active">
+          <div class="cargo-bar">
+            <span>📦 적재: </span><span id="cargo-count">0</span>/<span id="cargo-max">10</span>
+            <div id="cargo-bar-visual"></div>
+          </div>
+          <div class="two-col-trade">
+            <div class="trade-col">
+              <h4>🛒 구매</h4>
+              <div id="buy-list"></div>
+            </div>
+            <div class="trade-col">
+              <h4>💵 판매</h4>
+              <div id="sell-list"></div>
+            </div>
+          </div>
+          <h4 class="inv-title">📦 선박 적재함</h4>
+          <div id="inventory-grid"></div>
+        </div>
+
+        <div id="tab-travel" class="tab-pane hidden">
+          <h4>목적지를 선택하십시오</h4>
+          <div id="destination-list"></div>
+        </div>
+
+        <div id="tab-history" class="tab-pane hidden">
+          <div id="history-text"></div>
+          <div id="history-quiz-tease"></div>
+        </div>
+
+        <div id="tab-shop" class="tab-pane hidden">
+          <div id="ship-shop"></div>
+          <div id="equipment-shop"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Event Log Ticker -->
+  <div id="log-bar">
+    <span class="log-icon">📰</span>
+    <div id="log-ticker"><span id="log-text">항해 준비가 완료되었다. 역사의 파도를 헤쳐나가라!</span></div>
+  </div>
+</div>
+
+<!-- ══════════════ MODALS ══════════════ -->
+
+<!-- Quiz Modal -->
+<div id="modal-quiz" class="modal-overlay hidden" role="dialog" aria-modal="true">
+  <div class="modal-card quiz-modal">
+    <div id="quiz-port-banner"></div>
+    <div class="quiz-header">
+      <div id="quiz-port-label">살바도르 역사 퀴즈</div>
+      <div id="quiz-combo-badge">🔥 x1 콤보</div>
+      <div id="quiz-diff-badge">난이도: 쉬움</div>
+    </div>
+    <div id="quiz-timer-bar"><div id="quiz-timer-fill"></div></div>
+    <div id="quiz-question-text">질문이 여기에 표시됩니다.</div>
+    <div id="quiz-reward-info"></div>
+    <div id="quiz-options-grid"></div>
+    <div id="quiz-result" class="hidden">
+      <div id="quiz-result-icon"></div>
+      <div id="quiz-explain-text"></div>
+      <div id="quiz-figure-unlock" class="hidden"></div>
+      <button id="quiz-next-btn" onclick="closeQuiz()">계속하기 →</button>
+    </div>
+    <div id="quiz-hint-area">
+      <button id="quiz-hint-btn" onclick="useHint()">💡 힌트 사용 (-50G)</button>
+      <span id="quiz-hint-text" class="hidden"></span>
+    </div>
+  </div>
+</div>
+
+<!-- Event Modal -->
+<div id="modal-event" class="modal-overlay hidden" role="dialog" aria-modal="true">
+  <div class="modal-card event-modal">
+    <div id="event-img-container">
+      <img id="event-img" src="" alt="이벤트 이미지">
+      <div id="event-img-overlay"></div>
+    </div>
+    <div id="event-name-display">이벤트</div>
+    <div id="event-desc-display">이벤트 설명</div>
+    <div id="event-quiz-escape" class="hidden">
+      <div id="eq-question"></div>
+      <div id="eq-options"></div>
+    </div>
+    <div id="event-btn-area"></div>
+  </div>
+</div>
+
+<!-- Figure Card Pop-up -->
+<div id="modal-figure-unlock" class="modal-overlay hidden" role="dialog" aria-modal="true">
+  <div class="figure-unlock-card">
+    <div class="unlock-banner">🎴 역사 인물 카드 획득!</div>
+    <div id="figure-unlock-emoji" class="figure-big-emoji">👨‍✈️</div>
+    <div id="figure-unlock-name" class="figure-unlock-name">바스코 다 가마</div>
+    <div id="figure-unlock-meta"></div>
+    <div id="figure-unlock-quote" class="figure-quote"></div>
+    <div id="figure-unlock-rarity"></div>
+    <button class="btn-gold" onclick="closeModal('modal-figure-unlock')">카드 수집!</button>
+  </div>
+</div>
+
+<!-- Collection Modal -->
+<div id="modal-collection" class="modal-overlay hidden" role="dialog" aria-modal="true">
+  <div class="modal-large">
+    <div class="modal-header">
+      <h2>🎴 역사 인물 컬렉션</h2>
+      <button class="modal-close-btn" onclick="closeModal('modal-collection')">✕</button>
+    </div>
+    <p id="collection-progress-text"></p>
+    <div id="collection-grid"></div>
+  </div>
+</div>
+
+<!-- Atlas Modal -->
+<div id="modal-atlas" class="modal-overlay hidden" role="dialog" aria-modal="true">
+  <div class="modal-large">
+    <div class="modal-header">
+      <h2>📖 역사 도감</h2>
+      <button class="modal-close-btn" onclick="closeModal('modal-atlas')">✕</button>
+    </div>
+    <p class="atlas-hint">방문한 항구의 역사만 열람할 수 있습니다.</p>
+    <div id="atlas-list"></div>
+  </div>
+</div>
+
+<!-- Achievements Modal -->
+<div id="modal-achievements" class="modal-overlay hidden" role="dialog" aria-modal="true">
+  <div class="modal-large">
+    <div class="modal-header">
+      <h2>🏆 업적</h2>
+      <button class="modal-close-btn" onclick="closeModal('modal-achievements')">✕</button>
+    </div>
+    <div id="achievements-grid"></div>
+  </div>
+</div>
+
+<!-- Quests Modal -->
+<div id="modal-quests" class="modal-overlay hidden" role="dialog" aria-modal="true">
+  <div class="modal-large">
+    <div class="modal-header">
+      <h2>📜 퀘스트</h2>
+      <button class="modal-close-btn" onclick="closeModal('modal-quests')">✕</button>
+    </div>
+    <div id="quests-list"></div>
+  </div>
+</div>
+
+<!-- Toast Notification -->
+<div id="toast" class="hidden">
+  <div id="toast-inner"></div>
+</div>
+
+<!-- Gold Particles -->
+<div id="particles-host"></div>
+
+<script src="game.js"></script>
+</body>
+</html>

@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "name": "career-exploration-app",
   "builds": [
     {
       "src": "**/*",
@@ -7,6 +8,14 @@
     }
   ],
   "routes": [
+    {
+      "src": "/monopoly/(.*)",
+      "dest": "/monopoly/$1"
+    },
+    {
+      "src": "/(.*).html",
+      "dest": "/$1.html"
+    },
     {
       "src": "/(.*)",
       "dest": "/$1"

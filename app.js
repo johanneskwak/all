@@ -393,6 +393,13 @@ function renderDashboard() {
                         <h3 style="font-size: 1.6rem; color: #fff; margin: 0;">세계사 모노폴리</h3>
                         <p style="font-size: 1rem; color: #cbd5e1; margin-top: 0.5rem;">유라시아 교역로를 장악하고 문명을 발전시켜 승리하세요.</p>
                     </div>
+
+                    <div class="glass-card menu-card" onclick="window.location.href='daehanghaesiidae/index.html'" style="flex: 1; min-width: 320px; padding: 2rem;">
+                        <div class="badge" style="background:#10b981;">History Trading Sim</div>
+                        <div style="font-size: 80px; margin: 10px 0;">⛵</div>
+                        <h3 style="font-size: 1.6rem; color: #fff; margin: 0;">대항해시대: 부와 권력</h3>
+                        <p style="font-size: 1rem; color: #cbd5e1; margin-top: 0.5rem;">15세기 무역의 중심에서 교역로를 개척해 대제독에 오르세요!</p>
+                    </div>
                 </div>
             </div>
             
