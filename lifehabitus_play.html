@@ -9,6 +9,7 @@
     --bg:#0f1724; --card:#16233a; --card2:#1c2d4a;
     --accent:#22d3ee; --good:#22c55e; --bad:#ef4444; --gold:#eab308;
     --text:#f1f5f9; --sub:#93a3b8;
+    --c0:#e21b3c; --c1:#1368ce; --c2:#d89e00; --c3:#26890c;
   }
   *{box-sizing:border-box;}
   body{
@@ -37,10 +38,25 @@
   .opt .t{ font-weight:800; font-size:15px; }
   .opt .d{ font-size:12px; color:var(--sub); margin-top:4px; }
   .opt.locked{ opacity:.35; }
-  .qtext{ font-size:19px; font-weight:800; text-align:center; margin-bottom:14px; line-height:1.4; }
-  .choice{ width:100%; padding:16px; margin-top:8px; border-radius:10px; border:none; background:var(--card2); color:#fff; font-weight:700; font-size:15px; cursor:pointer; }
-  .choice.picked{ outline:3px solid var(--accent); }
-  .choice.right{ outline:3px solid var(--good); }
+  .qtext{ font-size:19px; font-weight:800; text-align:center; margin-bottom:16px; line-height:1.4; }
+  .dots{ display:flex; justify-content:center; gap:6px; margin-bottom:10px; }
+  .dot{ width:8px; height:8px; border-radius:50%; background:#2a3b57; }
+  .dot.done{ background:var(--accent); }
+  .dot.now{ background:var(--gold); transform:scale(1.3); }
+  .choicegrid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .choice{
+    min-height:88px; padding:14px 10px; border-radius:14px; border:none; color:#fff;
+    font-weight:800; font-size:15px; cursor:pointer; box-shadow:0 4px 10px rgba(0,0,0,.25);
+    display:flex; align-items:center; justify-content:center; text-align:center; line-height:1.3;
+    transition:transform .12s ease, opacity .12s ease;
+  }
+  .choice:active{ transform:scale(.96); }
+  .choice.c0{ background:var(--c0); } .choice.c1{ background:var(--c1); }
+  .choice.c2{ background:var(--c2); } .choice.c3{ background:var(--c3); }
+  .choice.picked{ outline:4px solid #fff; }
+  .choice.right{ outline:4px solid var(--good); }
+  .choice.fade{ opacity:.4; }
+  .choice:disabled{ cursor:default; }
   .center{ text-align:center; }
   .sub{ color:var(--sub); font-size:13px; }
   .money{ color:var(--gold); font-weight:800; }
@@ -91,9 +107,10 @@
 
 <div class="card hidden" id="view-quiz">
   <div class="sub center" id="quiz-round-label"></div>
+  <div class="dots" id="qz-dots"></div>
   <div class="qtext" id="qz-text"></div>
-  <div id="qz-choices"></div>
-  <div class="sub center" id="qz-msg" style="margin-top:8px;"></div>
+  <div class="choicegrid" id="qz-choices"></div>
+  <div class="sub center" id="qz-msg" style="margin-top:10px;"></div>
 </div>
 
 <div class="card hidden center" id="view-waiting">
@@ -299,17 +316,29 @@ async function pickNetworkCard(cardId){
   setTimeout(poll, 400);
 }
 
-let lastQuizKey = null;
+let lastQuizKey = null, submitting = false;
 async function renderQuiz(me, g){
   const { data, error } = await sb.rpc('lg2_quiz_view', { p_join: joinCode });
   if(error || !data.active){
+    $('qz-dots').innerHTML = '';
     $('qz-text').textContent = '진행자가 퀴즈를 시작할 때까지 기다려주세요…';
     $('qz-choices').innerHTML = '';
+    $('qz-msg').textContent = '';
     show('view-quiz');
     return;
   }
-  $('quiz-round-label').textContent = `${STAGE_NAMES[g.stage]} · 문제 ${data.idx+1}/${data.total}`;
+  if(submitting) return; // 낙관적 UI 표시 중에는 서버 데이터로 덮어쓰지 않음
+
+  $('quiz-round-label').textContent = `${STAGE_NAMES[g.stage]}`;
   $('qz-text').textContent = data.question;
+
+  const dots = $('qz-dots');
+  dots.innerHTML = '';
+  for(let i=0;i<data.total;i++){
+    const d = document.createElement('span');
+    d.className = 'dot' + (i<data.idx ? ' done' : i===data.idx ? ' now' : '');
+    dots.appendChild(d);
+  }
 
   const wrap = $('qz-choices');
   const key = g.stage+'-'+data.idx+'-'+data.phase;
@@ -318,24 +347,46 @@ async function renderQuiz(me, g){
     wrap.innerHTML = '';
     data.choices.forEach((c,i) => {
       const b = document.createElement('button');
-      b.className = 'choice';
+      b.className = 'choice c'+i;
       if(data.my_choice === i) b.classList.add('picked');
       if(data.phase === 'reveal' && i === data.answer_index) b.classList.add('right');
+      if(data.phase === 'reveal' && data.my_choice !== null && i !== data.my_choice && i !== data.answer_index) b.classList.add('fade');
       b.textContent = c;
       b.disabled = (data.my_choice !== null) || data.phase !== 'question';
-      b.onclick = () => submitQuiz(i);
+      b.onclick = () => submitQuiz(i, b, wrap);
       wrap.appendChild(b);
     });
   }
-  $('qz-msg').textContent = data.my_choice !== null
-    ? (data.phase === 'reveal' ? (data.my_correct ? '정답입니다! 🎉' : '아쉬워요 😅') : '제출 완료! 다음 문제를 기다려주세요.')
-    : '';
+
+  const isLast = (data.idx === data.total - 1);
+  if(data.my_choice !== null){
+    if(data.phase === 'reveal'){
+      $('qz-msg').textContent = data.my_correct ? '정답입니다! 🎉' : '아쉬워요 😅';
+    } else if(isLast){
+      $('qz-msg').textContent = `${data.total}문제를 모두 풀었어요! 선생님이 다음 단계로 넘길 때까지 기다려주세요 🎉`;
+    } else {
+      $('qz-msg').textContent = '제출 완료! 다음 문제를 기다려주세요.';
+    }
+  } else {
+    $('qz-msg').textContent = '';
+  }
   show('view-quiz');
 }
 
-async function submitQuiz(choiceIdx){
+async function submitQuiz(choiceIdx, btnEl, wrap){
+  submitting = true;
+  Array.from(wrap.children).forEach(el => el.disabled = true);
+  btnEl.classList.add('picked');
+  $('qz-msg').textContent = '제출 중…';
+
   const { error } = await sb.rpc('lg2_quiz_answer', { p_join: joinCode, p_choice: choiceIdx });
-  if(error){ $('qz-msg').textContent = error.message; return; }
+  submitting = false;
+  if(error){
+    Array.from(wrap.children).forEach(el => el.disabled = false);
+    btnEl.classList.remove('picked');
+    $('qz-msg').textContent = error.message;
+    return;
+  }
   lastQuizKey = null;
   poll();
 }
