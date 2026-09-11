@@ -13,6 +13,14 @@
       "dest": "/monopoly/$1"
     },
     {
+      "src": "/lifehabitus/host",
+      "dest": "/lifehabitus_host.html"
+    },
+    {
+      "src": "/lifehabitus",
+      "dest": "/lifehabitus_play.html"
+    },
+    {
       "src": "/(.*).html",
       "dest": "/$1.html"
     },

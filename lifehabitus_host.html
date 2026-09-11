@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>인생게임: 아비투스 — 진행자</title>
+<style>
+  :root{
+    --bg:#0f1724; --card:#16233a; --card2:#1c2d4a;
+    --accent:#22d3ee; --good:#22c55e; --bad:#ef4444; --gold:#eab308;
+    --text:#f1f5f9; --sub:#93a3b8;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--text); min-height:100vh;
+    font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+    padding:20px 14px 60px;
+  }
+  h1{ text-align:center; color:var(--accent); font-size:20px; margin-bottom:20px; }
+  .wrap{ max-width:900px; margin:0 auto; }
+  .card{ background:var(--card); border-radius:16px; padding:20px; margin-bottom:16px; box-shadow:0 8px 24px rgba(0,0,0,.25); }
+  label{ display:block; font-size:13px; color:var(--sub); margin-bottom:6px; margin-top:12px; }
+  input[type=text], input[type=number]{
+    width:100%; padding:12px 14px; font-size:15px; border-radius:10px; border:1px solid #2a3b57;
+    background:var(--card2); color:var(--text); outline:none;
+  }
+  button{
+    padding:11px 18px; font-size:14px; font-weight:700; border:none; border-radius:10px;
+    background:var(--accent); color:#04222a; cursor:pointer; margin-top:10px; margin-right:8px;
+  }
+  button.secondary{ background:var(--card2); color:var(--text); border:1px solid #2a3b57; }
+  button.danger{ background:var(--bad); color:#fff; }
+  button:disabled{ opacity:.4; cursor:default; }
+  .stagebar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+  .stagebar .name{ font-size:18px; font-weight:800; }
+  .stagebar .prog{ color:var(--sub); font-size:13px; }
+  .qrgrid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:12px; margin-top:10px; }
+  .qritem{ background:var(--card2); border-radius:12px; padding:10px; text-align:center; }
+  .qritem img{ width:100%; border-radius:8px; background:#fff; padding:4px; }
+  .qritem .code{ font-weight:800; font-size:16px; color:var(--accent); margin-top:6px; }
+  .qritem .label{ font-size:12px; color:var(--sub); }
+  table{ width:100%; border-collapse:collapse; margin-top:10px; font-size:13px; }
+  th,td{ padding:8px 6px; text-align:left; border-bottom:1px solid #223252; }
+  th{ color:var(--sub); font-weight:600; }
+  .badge{ display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; background:var(--card2); }
+  .badge.ready{ background:var(--good); color:#04220f; }
+  .qbig{ font-size:20px; font-weight:800; text-align:center; margin:8px 0 14px; }
+  .choicebox{ background:var(--card2); border-radius:10px; padding:10px 14px; margin-bottom:6px; display:flex; justify-content:space-between; }
+  .choicebox.right{ outline:2px solid var(--good); }
+  .center{ text-align:center; }
+  .money{ color:var(--gold); font-weight:700; }
+  .hidden{ display:none !important; }
+  .sub{ color:var(--sub); font-size:13px; }
+  .rankrow{ display:flex; justify-content:space-between; padding:12px 16px; background:var(--card2); border-radius:10px; margin-bottom:8px; }
+  .rankrow:first-child{ outline:2px solid var(--gold); }
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>🏛️ 인생게임: 아비투스 — 진행자</h1>
+
+<div class="card" id="view-setup">
+  <label>게임 제목</label>
+  <input type="text" id="in-title" placeholder="인생 게임: 아비투스">
+  <label>교사 코드 (4자 이상, 본인만 기억)</label>
+  <input type="text" id="in-code" placeholder="예: teach2026">
+  <label>조 개수 (2~25)</label>
+  <input type="number" id="in-teams" value="6" min="2" max="25">
+  <button id="btn-create">게임 만들기 →</button>
+  <div class="sub" id="setup-msg"></div>
+</div>
+
+<div class="card hidden" id="view-codes">
+  <div class="sub">각 조에게 QR 또는 코드를 나눠주세요 (조별로 여러 기기가 같은 코드로 접속해도 됩니다)</div>
+  <div class="qrgrid" id="qrgrid"></div>
+</div>
+
+<div class="card hidden" id="view-game">
+  <div class="stagebar">
+    <span class="name" id="stage-name"></span>
+    <span class="prog" id="stage-prog"></span>
+  </div>
+
+  <div id="quiz-panel" class="hidden">
+    <div class="qbig" id="qz-question"></div>
+    <div id="qz-choices"></div>
+    <div class="sub center" id="qz-answered" style="margin-top:8px;"></div>
+    <div class="center">
+      <button id="btn-quiz-start" class="secondary">퀴즈 시작</button>
+      <button id="btn-quiz-reveal">정답 공개</button>
+      <button id="btn-quiz-next" class="secondary">다음 문제 / 라운드 종료</button>
+    </div>
+  </div>
+
+  <div class="center" style="margin-top:10px;">
+    <button id="btn-next-stage">다음 단계로 →</button>
+  </div>
+
+  <table id="team-table">
+    <thead><tr><th>조</th><th>자산(만원)</th><th>학업점수</th><th>현재 선택</th><th>상태</th></tr></thead>
+    <tbody id="team-tbody"></tbody>
+  </table>
+</div>
+
+<div class="card hidden center" id="view-ended">
+  <div class="sub" style="margin-bottom:12px; font-size:16px;">🏁 최종 결과 — 자산 순위</div>
+  <div id="final-list"></div>
+</div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = "https://wsmwfhoeoravcmmvreqq.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndzbXdmaG9lb3JhdmNtbXZyZXFxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5MDQwNDIsImV4cCI6MjEwMzQ4MDA0Mn0.5nrCqntzuAc8AFSUZe8CFjO3YLFPjEp7xYQr_rstTL8";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const $ = (id) => document.getElementById(id);
+
+let teacherCode = null, pollTimer = null;
+const STAGE_NAMES = {1:'① 출생',2:'② 유치원 선택',3:'③ 초등 입시 퀴즈',4:'④ 초등학교 선택',
+  5:'⑤ 중학교 입시 퀴즈',6:'⑥ 중학교 선택',7:'⑦ 고등학교 입시 퀴즈',8:'⑧ 고등학교 선택',
+  9:'⑨ 대학 입시 퀴즈',10:'⑩ 대학 선택 · 취업'};
+const QUIZ_STAGES = [3,5,7,9];
+
+$('btn-create').onclick = async () => {
+  const title = $('in-title').value.trim() || '인생 게임: 아비투스';
+  const code = $('in-code').value.trim();
+  const teams = parseInt($('in-teams').value, 10);
+  if(code.length < 4){ $('setup-msg').textContent = '교사 코드는 4자 이상이어야 합니다.'; return; }
+  if(!(teams>=2 && teams<=25)){ $('setup-msg').textContent = '조 개수는 2~25 사이여야 합니다.'; return; }
+  $('btn-create').disabled = true; $('setup-msg').textContent = '생성 중…';
+  const { error } = await sb.rpc('lg_create', { p_title:title, p_code:code, p_teams:teams });
+  if(error){ $('setup-msg').textContent = '실패: ' + error.message; $('btn-create').disabled=false; return; }
+  teacherCode = code;
+  await loadCodesGrid();
+  $('view-codes').classList.remove('hidden');
+  $('view-game').classList.remove('hidden');
+  startPolling();
+};
+
+async function loadCodesGrid(){
+  const { data, error } = await sb.rpc('lg2_state', { p_code: teacherCode });
+  if(error) return;
+  const wrap = $('qrgrid');
+  wrap.innerHTML = '';
+  const playUrl = location.origin + '/lifehabitus';
+  data.teams.forEach(t => {
+    const joinUrl = playUrl + '?code=' + t.join_code;
+    const div = document.createElement('div');
+    div.className = 'qritem';
+    div.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(joinUrl)}">
+      <div class="code">${t.join_code}</div><div class="label">${t.label}</div>`;
+    wrap.appendChild(div);
+  });
+}
+
+function startPolling(){
+  refresh();
+  pollTimer = setInterval(refresh, 1800);
+}
+
+let lastStage = null;
+async function refresh(){
+  const { data, error } = await sb.rpc('lg2_state', { p_code: teacherCode });
+  if(error) return;
+  const g = data.game;
+  if(g.status === 'finished'){
+    clearInterval(pollTimer);
+    renderFinal(data.teams);
+    return;
+  }
+  $('stage-name').textContent = STAGE_NAMES[g.stage] || ('단계 '+g.stage);
+  const readyCount = data.teams.filter(t=>t.ready).length;
+  $('stage-prog').textContent = `${readyCount}/${data.teams.length}조 완료`;
+
+  const isQuiz = QUIZ_STAGES.includes(g.stage);
+  $('quiz-panel').classList.toggle('hidden', !isQuiz);
+  if(isQuiz) await renderQuizPanel(g);
+
+  renderTeamTable(data.teams);
+  lastStage = g.stage;
+}
+
+function renderTeamTable(teams){
+  const tbody = $('team-tbody');
+  tbody.innerHTML = '';
+  teams.forEach(t => {
+    const choice = t.college || t.high || t.middle || t.elem || t.kinder || '-';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${t.label}</td><td class="money">${(t.assets||0).toLocaleString()}</td>
+      <td>${t.academic_score}</td><td>${choice}</td>
+      <td><span class="badge ${t.ready?'ready':''}">${t.ready?'완료':'대기'}</span></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+async function renderQuizPanel(g){
+  const { data, error } = await sb.rpc('lg2_quiz_admin_view', { p_code: teacherCode });
+  if(error || !data.active){
+    $('qz-question').textContent = '퀴즈가 아직 시작되지 않았습니다.';
+    $('qz-choices').innerHTML = '';
+    $('qz-answered').textContent = '';
+    $('btn-quiz-start').classList.remove('hidden');
+    $('btn-quiz-reveal').classList.add('hidden');
+    $('btn-quiz-next').classList.add('hidden');
+    return;
+  }
+  $('btn-quiz-start').classList.add('hidden');
+  $('btn-quiz-reveal').classList.remove('hidden');
+  $('btn-quiz-next').classList.remove('hidden');
+  $('qz-question').textContent = data.question;
+  const wrap = $('qz-choices');
+  wrap.innerHTML = '';
+  const revealed = g.quiz_phase === 'reveal' || g.quiz_phase === 'done';
+  data.choices.forEach((c,i) => {
+    const div = document.createElement('div');
+    div.className = 'choicebox' + (revealed && i===data.answer_index ? ' right' : '');
+    div.innerHTML = `<span>${c}</span>${revealed && i===data.answer_index ? '<span>✓ 정답</span>':''}`;
+    wrap.appendChild(div);
+  });
+  $('qz-answered').textContent = `${data.answered}/${data.total}조 제출`;
+}
+
+$('btn-quiz-start').onclick = async () => {
+  const { error } = await sb.rpc('lg2_quiz_start', { p_code: teacherCode });
+  if(error) alert(error.message);
+  refresh();
+};
+$('btn-quiz-reveal').onclick = async () => {
+  const { error } = await sb.rpc('lg_quiz_reveal', { p_code: teacherCode });
+  if(error) alert(error.message);
+  refresh();
+};
+$('btn-quiz-next').onclick = async () => {
+  const { error } = await sb.rpc('lg2_quiz_next', { p_code: teacherCode });
+  if(error) alert(error.message);
+  refresh();
+};
+$('btn-next-stage').onclick = async () => {
+  const { error } = await sb.rpc('lg2_next_stage', { p_code: teacherCode });
+  if(error){ alert(error.message); return; }
+  refresh();
+};
+
+function renderFinal(teams){
+  $('view-ended').classList.remove('hidden');
+  $('view-game').classList.add('hidden');
+  const sorted = [...teams].sort((a,b) => (b.assets||0)-(a.assets||0));
+  const wrap = $('final-list');
+  wrap.innerHTML = '';
+  sorted.forEach((t,i) => {
+    const div = document.createElement('div');
+    div.className = 'rankrow';
+    div.innerHTML = `<span>${i+1}위 · ${t.label} · ${t.college||''} · ${t.career||''}</span>
+      <span class="money">${(t.assets||0).toLocaleString()}만원</span>`;
+    wrap.appendChild(div);
+  });
+}
+</script>
+</body>
+</html>

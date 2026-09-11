@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>인생게임: 아비투스</title>
+<style>
+  :root{
+    --bg:#0f1724; --card:#16233a; --card2:#1c2d4a;
+    --accent:#22d3ee; --good:#22c55e; --bad:#ef4444; --gold:#eab308;
+    --text:#f1f5f9; --sub:#93a3b8;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--text); min-height:100vh;
+    font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+    display:flex; flex-direction:column; align-items:center; padding:16px 14px 50px;
+  }
+  h1{ font-size:17px; color:var(--accent); margin:6px 0 14px; }
+  .card{ background:var(--card); border-radius:16px; padding:20px; width:100%; max-width:440px; box-shadow:0 8px 24px rgba(0,0,0,.3); margin-bottom:14px; }
+  input[type=text]{
+    width:100%; padding:14px; font-size:18px; border-radius:10px; border:1px solid #2a3b57;
+    background:var(--card2); color:var(--text); margin-bottom:10px; outline:none;
+  }
+  button{
+    width:100%; padding:13px; font-size:16px; font-weight:700; border:none; border-radius:10px;
+    background:var(--accent); color:#04222a; cursor:pointer; margin-top:8px;
+  }
+  button:disabled{ opacity:.4; }
+  .statusbar{ display:flex; justify-content:space-between; width:100%; max-width:440px; margin-bottom:10px; font-size:13px; color:var(--sub); }
+  .statusbar b{ color:var(--gold); }
+  .stagelabel{ text-align:center; font-weight:800; font-size:17px; margin-bottom:6px; }
+  .opt{
+    width:100%; text-align:left; background:var(--card2); border:1px solid #2a3b57; border-radius:12px;
+    padding:14px 16px; margin-top:10px; color:var(--text); cursor:pointer;
+  }
+  .opt .t{ font-weight:800; font-size:15px; }
+  .opt .d{ font-size:12px; color:var(--sub); margin-top:4px; }
+  .opt.locked{ opacity:.35; }
+  .qtext{ font-size:19px; font-weight:800; text-align:center; margin-bottom:14px; line-height:1.4; }
+  .choice{ width:100%; padding:16px; margin-top:8px; border-radius:10px; border:none; background:var(--card2); color:#fff; font-weight:700; font-size:15px; cursor:pointer; }
+  .choice.picked{ outline:3px solid var(--accent); }
+  .choice.right{ outline:3px solid var(--good); }
+  .center{ text-align:center; }
+  .sub{ color:var(--sub); font-size:13px; }
+  .money{ color:var(--gold); font-weight:800; }
+  .hidden{ display:none !important; }
+  .lbrow{ display:flex; justify-content:space-between; padding:10px 14px; background:var(--card2); border-radius:10px; margin-bottom:8px; font-size:14px; }
+  .lbrow.me{ outline:2px solid var(--accent); }
+  .rank{ color:var(--gold); font-weight:800; margin-right:8px; }
+</style>
+</head>
+<body>
+<h1>🏛️ 인생게임: 아비투스</h1>
+
+<div class="card" id="view-join">
+  <input type="text" id="in-code" placeholder="조 코드 4자리" maxlength="4" inputmode="numeric">
+  <button id="btn-join">입장하기</button>
+  <div class="sub center" id="join-msg" style="margin-top:8px;"></div>
+</div>
+
+<div class="statusbar hidden" id="statusbar">
+  <span id="sb-label"></span>
+  <span>자산 <b id="sb-assets">0</b>만원 · 학업점수 <b id="sb-score">0</b></span>
+</div>
+
+<div class="card hidden center" id="view-birth">
+  <div class="stagelabel">① 출생</div>
+  <div class="sub" id="birth-sub">운명의 주사위를 굴려 부모님의 재산을 확인하세요.</div>
+  <button id="btn-birth">🎲 주사위 굴리기</button>
+</div>
+
+<div class="card hidden" id="view-choice">
+  <div class="stagelabel" id="choice-title"></div>
+  <div id="choice-opts"></div>
+  <div class="sub center" id="choice-msg" style="margin-top:10px;"></div>
+</div>
+
+<div class="card hidden" id="view-quiz">
+  <div class="sub center" id="quiz-round-label"></div>
+  <div class="qtext" id="qz-text"></div>
+  <div id="qz-choices"></div>
+  <div class="sub center" id="qz-msg" style="margin-top:8px;"></div>
+</div>
+
+<div class="card hidden center" id="view-waiting">
+  <div class="sub" id="waiting-msg">다른 조를 기다리는 중…</div>
+</div>
+
+<div class="card hidden center" id="view-ended">
+  <div class="stagelabel">🏁 최종 결과</div>
+  <div id="final-list" style="margin-top:10px;"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = "https://wsmwfhoeoravcmmvreqq.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndzbXdmaG9lb3JhdmNtbXZyZXFxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5MDQwNDIsImV4cCI6MjEwMzQ4MDA0Mn0.5nrCqntzuAc8AFSUZe8CFjO3YLFPjEp7xYQr_rstTL8";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const $ = (id) => document.getElementById(id);
+const views = ['view-join','view-birth','view-choice','view-quiz','view-waiting','view-ended'];
+function show(id){ views.forEach(v => $(v).classList.toggle('hidden', v!==id)); }
+
+const STAGE_NAMES = {1:'① 출생',2:'② 유치원 선택',3:'③ 초등 입시 퀴즈',4:'④ 초등학교 선택',
+  5:'⑤ 중학교 입시 퀴즈',6:'⑥ 중학교 선택',7:'⑦ 고등학교 입시 퀴즈',8:'⑧ 고등학교 선택',
+  9:'⑨ 대학 입시 퀴즈',10:'⑩ 대학 선택 · 취업'};
+const CHOICE_STAGE = { 2:{fn:'lg2_kinder_pick', opts:'lg2_kinder_opts', title:'② 유치원을 선택하세요'},
+  4:{fn:'lg2_elem_pick', opts:'lg2_elem_opts', title:'④ 초등학교를 선택하세요'},
+  6:{fn:'lg2_middle_pick', opts:'lg2_middle_opts', title:'⑥ 중학교를 선택하세요'},
+  8:{fn:'lg2_high_pick', opts:'lg2_high_opts', title:'⑧ 고등학교를 선택하세요'},
+  10:{fn:'lg2_college_pick', opts:'lg2_college_opts', title:'⑩ 대학교를 선택하세요'} };
+
+const urlCode = new URLSearchParams(location.search).get('code');
+if(urlCode) $('in-code').value = urlCode;
+
+let joinCode = null, pollTimer = null, renderedKey = null;
+
+function restore(){ const c = localStorage.getItem('lg2_code'); if(c) return c; return null; }
+const saved = restore();
+if(saved){ joinCode = saved; startAfterJoin(); }
+
+$('btn-join').onclick = () => {
+  const code = $('in-code').value.trim();
+  if(!/^\d{4}$/.test(code)){ $('join-msg').textContent = '4자리 코드를 입력해주세요.'; return; }
+  joinCode = code;
+  localStorage.setItem('lg2_code', code);
+  startAfterJoin();
+};
+
+function startAfterJoin(){
+  poll();
+  pollTimer = setInterval(poll, 1500);
+}
+
+async function poll(){
+  const { data, error } = await sb.rpc('lg2_me', { p_code: joinCode });
+  if(error){
+    $('join-msg').textContent = '입장 실패: 코드를 확인해주세요.';
+    localStorage.removeItem('lg2_code');
+    clearInterval(pollTimer);
+    show('view-join');
+    return;
+  }
+  const me = data.me, g = data.game;
+
+  $('statusbar').classList.remove('hidden');
+  $('sb-label').textContent = me.label;
+  $('sb-assets').textContent = (me.assets||0).toLocaleString();
+  $('sb-score').textContent = me.academic_score;
+
+  if(g.status === 'finished'){
+    clearInterval(pollTimer);
+    await renderFinal();
+    return;
+  }
+
+  if(g.stage === 1){ return renderBirth(me, g); }
+  if(CHOICE_STAGE[g.stage]){ return renderChoice(me, g); }
+  if([3,5,7,9].includes(g.stage)){ return renderQuiz(me, g); }
+}
+
+function renderBirth(me, g){
+  if(me.ready){
+    $('waiting-msg').innerHTML = `출발 자산 <b class="money">${(me.born_assets||0).toLocaleString()}만원</b> · 형제 ${me.siblings}명<br><span class="sub">다음 단계를 기다리는 중…</span>`;
+    show('view-waiting');
+  } else {
+    show('view-birth');
+  }
+}
+$('btn-birth').onclick = async () => {
+  $('btn-birth').disabled = true;
+  const { data, error } = await sb.rpc('lg_birth', { p_join: joinCode });
+  if(error){ $('birth-sub').textContent = error.message; $('btn-birth').disabled=false; return; }
+  poll();
+};
+
+async function renderChoice(me, g){
+  const stageInfo = CHOICE_STAGE[g.stage];
+  if(me.ready){
+    const key = ({2:'kinder',4:'elem',6:'middle',8:'high',10:'college'})[g.stage];
+    $('waiting-msg').innerHTML = `선택 완료: <b>${me[key]||''}</b><br><span class="sub">다음 단계를 기다리는 중…</span>`;
+    show('view-waiting');
+    return;
+  }
+  const cacheKey = 'choice-'+g.stage;
+  if(renderedKey === cacheKey) { show('view-choice'); return; }
+  renderedKey = cacheKey;
+
+  $('choice-title').textContent = stageInfo.title;
+  const { data: opts } = await sb.rpc(stageInfo.opts);
+  const discount = Math.min(2, Math.floor((me.assets||0)/30000));
+  const wrap = $('choice-opts');
+  wrap.innerHTML = '';
+  opts.forEach(o => {
+    const needsAbroad = o.requires_abroad_ms && !me.studied_abroad_ms;
+    const need = Math.max(0, o.cutoff - discount);
+    const affordable = (me.assets||0) >= o.cost;
+    const eligible = me.academic_score >= need && affordable && !needsAbroad;
+    const div = document.createElement('button');
+    div.className = 'opt' + (eligible ? '' : ' locked');
+    div.innerHTML = `<div class="t">${o.choice}</div>
+      <div class="d">${o.note} · 비용 ${o.cost.toLocaleString()}만원${o.cutoff>0 ? ' · 필요 학업점수 '+need : ''}${needsAbroad ? ' · 중학교 유학 필요':''}</div>`;
+    div.onclick = () => pickChoice(stageInfo.fn, o.choice);
+    wrap.appendChild(div);
+  });
+  $('choice-msg').textContent = '';
+  show('view-choice');
+}
+
+async function pickChoice(fnName, choice){
+  $('choice-msg').textContent = '처리 중…';
+  const { data, error } = await sb.rpc(fnName, { p_join: joinCode, p_choice: choice });
+  if(error){ $('choice-msg').textContent = error.message; return; }
+  if(data.career){ $('choice-msg').textContent = `진로 확정: ${data.career} (연소득 ${data.pay.toLocaleString()}만원)`; }
+  renderedKey = null;
+  setTimeout(poll, 400);
+}
+
+let lastQuizKey = null;
+async function renderQuiz(me, g){
+  const { data, error } = await sb.rpc('lg2_quiz_view', { p_join: joinCode });
+  if(error || !data.active){
+    $('qz-text').textContent = '진행자가 퀴즈를 시작할 때까지 기다려주세요…';
+    $('qz-choices').innerHTML = '';
+    show('view-quiz');
+    return;
+  }
+  $('quiz-round-label').textContent = `${STAGE_NAMES[g.stage]} · 문제 ${data.idx+1}/${data.total}`;
+  $('qz-text').textContent = data.question;
+
+  const wrap = $('qz-choices');
+  const key = g.stage+'-'+data.idx+'-'+data.phase;
+  if(lastQuizKey !== key){
+    lastQuizKey = key;
+    wrap.innerHTML = '';
+    data.choices.forEach((c,i) => {
+      const b = document.createElement('button');
+      b.className = 'choice';
+      if(data.my_choice === i) b.classList.add('picked');
+      if(data.phase === 'reveal' && i === data.answer_index) b.classList.add('right');
+      b.textContent = c;
+      b.disabled = (data.my_choice !== null) || data.phase !== 'question';
+      b.onclick = () => submitQuiz(i);
+      wrap.appendChild(b);
+    });
+  }
+  $('qz-msg').textContent = data.my_choice !== null
+    ? (data.phase === 'reveal' ? (data.my_correct ? '정답입니다! 🎉' : '아쉬워요 😅') : '제출 완료! 다음 문제를 기다려주세요.')
+    : '';
+  show('view-quiz');
+}
+
+async function submitQuiz(choiceIdx){
+  const { error } = await sb.rpc('lg2_quiz_answer', { p_join: joinCode, p_choice: choiceIdx });
+  if(error){ $('qz-msg').textContent = error.message; return; }
+  lastQuizKey = null;
+  poll();
+}
+
+async function renderFinal(){
+  const { data, error } = await sb.rpc('lg2_leaderboard', { p_join: joinCode });
+  const wrap = $('final-list');
+  wrap.innerHTML = '';
+  if(!error){
+    data.forEach((t,i) => {
+      const row = document.createElement('div');
+      row.className = 'lbrow' + (t.label === $('sb-label').textContent ? ' me' : '');
+      row.innerHTML = `<span><span class="rank">${i+1}</span>${t.label} · ${t.college||''} · ${t.career||''}</span><span class="money">${(t.assets||0).toLocaleString()}만원</span>`;
+      wrap.appendChild(row);
+    });
+  }
+  show('view-ended');
+}
+</script>
+</body>
+</html>
