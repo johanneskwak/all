@@ -119,7 +119,7 @@ const $ = (id) => document.getElementById(id);
 let teacherCode = null, pollTimer = null;
 const STAGE_NAMES = {1:'① 출생',2:'② 유치원 선택',3:'③ 초등 입시 퀴즈',4:'④ 초등학교 선택',
   5:'⑤ 중학교 입시 퀴즈',6:'⑥ 중학교 선택',7:'⑦ 고등학교 입시 퀴즈',8:'⑧ 고등학교 선택',
-  9:'⑨ 대학 입시 퀴즈',10:'⑩ 대학 선택 · 취업'};
+  9:'⑨ 대학 입시 퀴즈',10:'⑩ 대학 선택',11:'⑪ 직업 선택',12:'⑫ 네트워크 카드'};
 const QUIZ_STAGES = [3,5,7,9];
 
 $('btn-create').onclick = async () => {
@@ -185,7 +185,7 @@ function renderTeamTable(teams){
   const tbody = $('team-tbody');
   tbody.innerHTML = '';
   teams.forEach(t => {
-    const choice = t.college || t.high || t.middle || t.elem || t.kinder || '-';
+    const choice = t.career || t.college || t.high || t.middle || t.elem || t.kinder || '-';
     const tr = document.createElement('tr');
     tr.innerHTML = `<td>${t.label}</td><td class="money">${(t.assets||0).toLocaleString()}</td>
       <td>${t.academic_score}</td><td>${choice}</td>

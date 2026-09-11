@@ -76,6 +76,19 @@
   <div class="sub center" id="choice-msg" style="margin-top:10px;"></div>
 </div>
 
+<div class="card hidden" id="view-career">
+  <div class="stagelabel">⑪ 직업을 선택하세요</div>
+  <div id="career-opts"></div>
+  <div class="sub center" id="career-msg" style="margin-top:10px;"></div>
+</div>
+
+<div class="card hidden" id="view-network">
+  <div class="stagelabel">⑫ 네트워크 카드를 선택하세요</div>
+  <div class="sub center" style="margin-bottom:6px;">3장 중 1장을 골라 자산 보너스를 받으세요</div>
+  <div id="network-opts"></div>
+  <div class="sub center" id="network-msg" style="margin-top:10px;"></div>
+</div>
+
 <div class="card hidden" id="view-quiz">
   <div class="sub center" id="quiz-round-label"></div>
   <div class="qtext" id="qz-text"></div>
@@ -98,12 +111,12 @@ const SUPABASE_URL = "https://wsmwfhoeoravcmmvreqq.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndzbXdmaG9lb3JhdmNtbXZyZXFxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5MDQwNDIsImV4cCI6MjEwMzQ4MDA0Mn0.5nrCqntzuAc8AFSUZe8CFjO3YLFPjEp7xYQr_rstTL8";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const $ = (id) => document.getElementById(id);
-const views = ['view-join','view-birth','view-choice','view-quiz','view-waiting','view-ended'];
+const views = ['view-join','view-birth','view-choice','view-career','view-network','view-quiz','view-waiting','view-ended'];
 function show(id){ views.forEach(v => $(v).classList.toggle('hidden', v!==id)); }
 
 const STAGE_NAMES = {1:'① 출생',2:'② 유치원 선택',3:'③ 초등 입시 퀴즈',4:'④ 초등학교 선택',
   5:'⑤ 중학교 입시 퀴즈',6:'⑥ 중학교 선택',7:'⑦ 고등학교 입시 퀴즈',8:'⑧ 고등학교 선택',
-  9:'⑨ 대학 입시 퀴즈',10:'⑩ 대학 선택 · 취업'};
+  9:'⑨ 대학 입시 퀴즈',10:'⑩ 대학 선택',11:'⑪ 직업 선택',12:'⑫ 네트워크 카드'};
 const CHOICE_STAGE = { 2:{fn:'lg2_kinder_pick', opts:'lg2_kinder_opts', title:'② 유치원을 선택하세요'},
   4:{fn:'lg2_elem_pick', opts:'lg2_elem_opts', title:'④ 초등학교를 선택하세요'},
   6:{fn:'lg2_middle_pick', opts:'lg2_middle_opts', title:'⑥ 중학교를 선택하세요'},
@@ -157,6 +170,8 @@ async function poll(){
   if(g.stage === 1){ return renderBirth(me, g); }
   if(CHOICE_STAGE[g.stage]){ return renderChoice(me, g); }
   if([3,5,7,9].includes(g.stage)){ return renderQuiz(me, g); }
+  if(g.stage === 11){ return renderCareer(me, g); }
+  if(g.stage === 12){ return renderNetwork(me, g); }
 }
 
 function renderBirth(me, g){
@@ -216,6 +231,74 @@ async function pickChoice(fnName, choice){
   setTimeout(poll, 400);
 }
 
+let renderedCareerKey = null;
+async function renderCareer(me, g){
+  if(me.ready){
+    $('waiting-msg').innerHTML = `직업 확정: <b>${me.career||''}</b><br><span class="sub">다음 단계를 기다리는 중…</span>`;
+    show('view-waiting');
+    return;
+  }
+  if(renderedCareerKey === 'career'){ show('view-career'); return; }
+  renderedCareerKey = 'career';
+
+  const { data: opts } = await sb.rpc('lg2_career_opts', { p_college: me.college });
+  const wrap = $('career-opts');
+  wrap.innerHTML = '';
+  (opts||[]).forEach(o => {
+    const div = document.createElement('button');
+    div.className = 'opt';
+    div.innerHTML = `<div class="t">${o.name}</div>
+      <div class="d">${o.flavor} · 초임 ${o.salary.toLocaleString()}만원 · 안정성 ${o.protect}</div>`;
+    div.onclick = () => pickCareer(o.id);
+    wrap.appendChild(div);
+  });
+  $('career-msg').textContent = '';
+  show('view-career');
+}
+async function pickCareer(choiceId){
+  $('career-msg').textContent = '처리 중…';
+  const { data, error } = await sb.rpc('lg2_career_pick', { p_join: joinCode, p_choice: choiceId });
+  if(error){ $('career-msg').textContent = error.message; return; }
+  $('career-msg').textContent = `진로 확정: ${data.career} (초임 ${data.pay.toLocaleString()}만원)`;
+  renderedCareerKey = null;
+  setTimeout(poll, 400);
+}
+
+let renderedNetworkKey = null;
+async function renderNetwork(me, g){
+  if(me.ready){
+    $('waiting-msg').innerHTML = `카드 선택 완료<br><span class="sub">다음 단계를 기다리는 중…</span>`;
+    show('view-waiting');
+    return;
+  }
+  if(renderedNetworkKey === 'network'){ show('view-network'); return; }
+  renderedNetworkKey = 'network';
+
+  const { data, error } = await sb.rpc('lg2_network_view', { p_join: joinCode });
+  const wrap = $('network-opts');
+  wrap.innerHTML = '';
+  if(!error){
+    (data.cards||[]).forEach(c => {
+      const div = document.createElement('button');
+      div.className = 'opt';
+      div.innerHTML = `<div class="t">${c.name} <span class="sub">(${c.rarity})</span></div>
+        <div class="d">${c.effect} · 자산 +${c.bonus.toLocaleString()}만원</div>`;
+      div.onclick = () => pickNetworkCard(c.id);
+      wrap.appendChild(div);
+    });
+  }
+  $('network-msg').textContent = '';
+  show('view-network');
+}
+async function pickNetworkCard(cardId){
+  $('network-msg').textContent = '처리 중…';
+  const { data, error } = await sb.rpc('lg2_network_pick', { p_join: joinCode, p_card_id: cardId });
+  if(error){ $('network-msg').textContent = error.message; return; }
+  $('network-msg').textContent = `카드 선택: ${data.card} (자산 +${data.bonus.toLocaleString()}만원)`;
+  renderedNetworkKey = null;
+  setTimeout(poll, 400);
+}
+
 let lastQuizKey = null;
 async function renderQuiz(me, g){
   const { data, error } = await sb.rpc('lg2_quiz_view', { p_join: joinCode });
@@ -265,7 +348,7 @@ async function renderFinal(){
     data.forEach((t,i) => {
       const row = document.createElement('div');
       row.className = 'lbrow' + (t.label === $('sb-label').textContent ? ' me' : '');
-      row.innerHTML = `<span><span class="rank">${i+1}</span>${t.label} · ${t.college||''} · ${t.career||''}</span><span class="money">${(t.assets||0).toLocaleString()}만원</span>`;
+      row.innerHTML = `<span><span class="rank">${i+1}</span>${t.label} · ${t.college||''} · ${t.career||''}${t.card ? ' · '+t.card : ''}</span><span class="money">${(t.assets||0).toLocaleString()}만원</span>`;
       wrap.appendChild(row);
     });
   }
