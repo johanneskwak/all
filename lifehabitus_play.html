@@ -174,6 +174,8 @@
   </span>
 </div>
 
+<button id="btn-skip" class="ghost hidden" style="max-width:440px; font-size:12px; padding:8px; margin-top:2px; margin-bottom:10px;">⏭️ 안 넘어가면 여기를 눌러 건너뛰기</button>
+
 <div class="stepper-wrap hidden" id="stepper-wrap">
   <div class="stepper" id="stepper"></div>
 </div>
@@ -362,6 +364,45 @@ async function freePlayQuizNext(){
   return await sb.rpc('lg2_quiz_next', { p_code: freePlayAdminCode });
 }
 
+// freePlayBusy를 켜고 fn을 실행한 뒤 무조건(에러가 나도) 다시 끕니다.
+// try/finally 없이 수동으로 켜고 끄면, 도중에 예외가 나는 순간 busy가 영원히 true로 남아
+// poll()이 통째로 멈추는 데드락이 생길 수 있어 반드시 이 헬퍼를 통해서만 잠급니다.
+async function withFreePlayLock(fn){
+  freePlayBusy = true;
+  try{ await fn(); }
+  finally{ freePlayBusy = false; }
+}
+
+function showSkipButton(show){
+  $('btn-skip').classList.toggle('hidden', !show);
+}
+
+// 자동 진행이 어떤 이유로든 멈췄을 때 쓰는 비상 탈출구: 잠금을 강제로 풀고,
+// 퀴즈 중이면 남은 문제를 끝까지 밀어붙인 뒤 다음 단계로 넘어갑니다.
+$('btn-skip').onclick = async () => {
+  if(!freePlay || !freePlayAdminCode) return;
+  $('btn-skip').disabled = true;
+  freePlayBusy = false; pollInFlight = false; submitting = false;
+  try{
+    const { data: meData } = await sb.rpc('lg2_me', { p_code: joinCode });
+    const g = meData && meData.game;
+    if(g && [3,5,7,9].includes(g.stage)){
+      for(let i=0;i<6;i++){
+        const { data: qv } = await sb.rpc('lg2_quiz_view', { p_join: joinCode });
+        if(!qv || !qv.active) break;
+        if(qv.my_choice === null){ await sb.rpc('lg2_quiz_answer', { p_join: joinCode, p_choice: 0 }); }
+        await sb.rpc('lg_quiz_reveal', { p_code: freePlayAdminCode });
+        const { data: nx } = await sb.rpc('lg2_quiz_next', { p_code: freePlayAdminCode });
+        if(nx && nx.done) break;
+      }
+    }
+    await sb.rpc('lg2_next_stage', { p_code: freePlayAdminCode });
+  } catch(e) { /* 최선을 다해 시도 — 실패해도 아래에서 화면은 갱신됩니다 */ }
+  lastQuizKey = null; renderedKey = null; renderedCareerKey = null; renderedNetworkKey = null;
+  $('btn-skip').disabled = false;
+  poll();
+};
+
 function renderStepper(stage){
   const wrap = $('stepper-wrap');
   wrap.classList.remove('hidden');
@@ -419,6 +460,7 @@ async function pollInner(){
     freePlay = false; freePlayAdminCode = null;
     clearInterval(pollTimer);
     show('view-join');
+    showSkipButton(false);
     $('btn-freeplay').disabled = false;
     return;
   }
@@ -435,10 +477,12 @@ async function pollInner(){
     clearInterval(pollTimer);
     $('stepper-wrap').classList.add('hidden');
     $('board-wrap').classList.add('hidden');
+    showSkipButton(false);
     await renderFinal(me);
     return;
   }
 
+  showSkipButton(freePlay);
   renderStepper(g.stage);
   if(g.stage > 1){ renderBoard(); } else { $('board-wrap').classList.add('hidden'); }
 
@@ -484,7 +528,7 @@ $('btn-birth').onclick = async () => {
   rc.classList.add('show');
   $('birth-sub').textContent = '';
 
-  setTimeout(async () => { freePlayBusy = true; await freePlayAdvance(); freePlayBusy = false; poll(); }, 1800);
+  setTimeout(async () => { await withFreePlayLock(freePlayAdvance); poll(); }, 1800);
 };
 
 async function renderChoice(me, g){
@@ -526,9 +570,7 @@ async function pickChoice(fnName, choice){
   const { data, error } = await sb.rpc(fnName, { p_join: joinCode, p_choice: choice });
   if(error){ $('choice-msg').textContent = error.message; return; }
   if(data.career){ $('choice-msg').textContent = `진로 확정: ${data.career} (연소득 ${data.pay.toLocaleString()}만원)`; }
-  freePlayBusy = true;
-  await freePlayAdvance();
-  freePlayBusy = false;
+  await withFreePlayLock(freePlayAdvance);
   renderedKey = null;
   setTimeout(poll, 400);
 }
@@ -562,9 +604,7 @@ async function pickCareer(choiceId){
   const { data, error } = await sb.rpc('lg2_career_pick', { p_join: joinCode, p_choice: choiceId });
   if(error){ $('career-msg').textContent = error.message; return; }
   $('career-msg').textContent = `진로 확정: ${data.career} (초임 ${data.pay.toLocaleString()}만원)`;
-  freePlayBusy = true;
-  await freePlayAdvance();
-  freePlayBusy = false;
+  await withFreePlayLock(freePlayAdvance);
   renderedCareerKey = null;
   setTimeout(poll, 400);
 }
@@ -600,9 +640,7 @@ async function pickNetworkCard(cardId){
   const { data, error } = await sb.rpc('lg2_network_pick', { p_join: joinCode, p_card_id: cardId });
   if(error){ $('network-msg').textContent = error.message; return; }
   $('network-msg').textContent = `카드 선택: ${data.card} (자산 +${data.bonus.toLocaleString()}만원)`;
-  freePlayBusy = true;
-  await freePlayAdvance();
-  freePlayBusy = false;
+  await withFreePlayLock(freePlayAdvance);
   renderedNetworkKey = null;
   setTimeout(poll, 400);
 }
@@ -618,9 +656,7 @@ async function renderQuiz(me, g){
     $('quiz-theory').innerHTML = theoryHtml(g.stage);
     show('view-quiz');
     if(freePlay && !freePlayBusy){
-      freePlayBusy = true;
-      await freePlayQuizStart();
-      freePlayBusy = false;
+      await withFreePlayLock(freePlayQuizStart);
       setTimeout(poll, 300);
     }
     return;
@@ -689,18 +725,21 @@ async function submitQuiz(choiceIdx, btnEl, wrap){
 
   if(freePlay){
     // 혼자 할 때는 진행자 역할도 스스로: 잠깐 제출 상태를 보여준 뒤 정답을 공개하고 다음 문제로 넘어갑니다.
-    // freePlayBusy로 감싸 타이머 폴링이 이 시퀀스 도중 lg2_quiz_start 등을 중복 호출하지 못하게 막습니다.
-    freePlayBusy = true;
-    await new Promise(res => setTimeout(res, 700));
-    await freePlayQuizReveal();
+    // withFreePlayLock으로 감싸 타이머 폴링이 이 시퀀스 도중 lg2_quiz_start 등을 중복 호출하지 못하게 막고,
+    // 중간에 에러가 나도 잠금이 풀려 poll()이 영원히 멈추지 않도록 합니다.
+    let nextData = null;
+    await withFreePlayLock(async () => {
+      await new Promise(res => setTimeout(res, 700));
+      await freePlayQuizReveal();
+    });
     lastQuizKey = null; submitting = false;
-    freePlayBusy = false;
     await poll();
-    freePlayBusy = true;
-    await new Promise(res => setTimeout(res, 1800));
-    const { data: nextData } = await freePlayQuizNext();
-    if(nextData && nextData.done){ await freePlayAdvance(); }
-    freePlayBusy = false;
+    await withFreePlayLock(async () => {
+      await new Promise(res => setTimeout(res, 1800));
+      const r = await freePlayQuizNext();
+      nextData = r && r.data;
+      if(nextData && nextData.done){ await freePlayAdvance(); }
+    });
     lastQuizKey = null;
     poll();
     return;
