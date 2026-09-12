@@ -145,6 +145,14 @@
     background:var(--card2); border:1px solid #2a3b57; font-weight:800; font-size:12px;
   }
 
+  /* ---- freeplay AI contrast summary ---- */
+  .contrast-box{ background:var(--card2); border:1px solid #2a3b57; border-radius:12px; padding:14px 16px; margin-top:14px; text-align:left; }
+  .contrast-title{ font-weight:800; font-size:13px; margin-bottom:10px; color:var(--text); }
+  .contrast-row{ display:flex; justify-content:space-between; align-items:center; padding:7px 0; font-size:13px; border-top:1px solid #223252; }
+  .contrast-row:first-of-type{ border-top:none; }
+  .contrast-row.mine{ color:var(--accent); font-weight:800; }
+  .contrast-note{ margin-top:10px; padding-top:10px; border-top:1px solid #223252; font-size:12px; color:var(--sub); line-height:1.5; }
+
   /* ---- theory callouts ---- */
   .theory{ background:var(--card2); border:1px solid #2a3b57; border-left:4px solid var(--accent); border-radius:10px; padding:2px 14px; margin-top:14px; }
   .theory summary{ cursor:pointer; font-weight:800; color:var(--accent); list-style:none; padding:11px 0; font-size:13px; display:flex; align-items:center; gap:6px; }
@@ -181,7 +189,7 @@
 </div>
 
 <div class="board hidden" id="board-wrap">
-  <div class="board-title">🗺️ 우리 반 자산 트랙</div>
+  <div class="board-title" id="board-title-text">🗺️ 우리 반 자산 트랙</div>
   <div class="board-track" id="board-track"></div>
   <div class="board-legend"><span>0만원</span><span>자산 많은 순 →</span></div>
 </div>
@@ -332,18 +340,22 @@ if(urlCode) $('in-code').value = urlCode;
 
 let joinCode = null, pollTimer = null, renderedKey = null, myBornAssets = 0;
 let freePlay = false, freePlayAdminCode = null, freePlayBusy = false, pollInFlight = false;
+let aiCodes = []; // 프리플레이에서 함께 만드는 AI 가상 상대 3명(금수저/흙수저/평균)의 조 코드
 
 function restore(){ const c = localStorage.getItem('lg2_code'); if(c) return c; return null; }
 const savedAdmin = localStorage.getItem('lg2_freeplay_admin');
 if(savedAdmin){ freePlay = true; freePlayAdminCode = savedAdmin; }
+const savedAi = localStorage.getItem('lg2_freeplay_ai');
+if(savedAi){ try{ aiCodes = JSON.parse(savedAi); }catch(e){ aiCodes = []; } }
 const saved = restore();
 if(saved){ joinCode = saved; startAfterJoin(); }
 
 $('btn-join').onclick = () => {
   const code = $('in-code').value.trim();
   if(!/^\d{4}$/.test(code)){ $('join-msg').textContent = '4자리 코드를 입력해주세요.'; return; }
-  freePlay = false; freePlayAdminCode = null;
+  freePlay = false; freePlayAdminCode = null; aiCodes = [];
   localStorage.removeItem('lg2_freeplay_admin');
+  localStorage.removeItem('lg2_freeplay_ai');
   joinCode = code;
   localStorage.setItem('lg2_code', code);
   startAfterJoin();
@@ -351,14 +363,16 @@ $('btn-join').onclick = () => {
 
 $('btn-freeplay').onclick = async () => {
   $('btn-freeplay').disabled = true;
-  $('join-msg').textContent = '체험용 게임을 준비하는 중…';
+  $('join-msg').textContent = 'AI 상대 3명과 함께할 체험용 게임을 준비하는 중…';
   const { data, error } = await sb.rpc('lg2_freeplay_create');
   if(error){ $('join-msg').textContent = '준비 실패: ' + error.message; $('btn-freeplay').disabled = false; return; }
   freePlay = true;
   freePlayAdminCode = data.admin_code;
   joinCode = data.join_code;
+  aiCodes = data.ai_codes || [];
   localStorage.setItem('lg2_code', joinCode);
   localStorage.setItem('lg2_freeplay_admin', freePlayAdminCode);
+  localStorage.setItem('lg2_freeplay_ai', JSON.stringify(aiCodes));
   startAfterJoin();
 };
 
@@ -369,8 +383,9 @@ function startAfterJoin(){
 
 /* 프리플레이(코드 없이 혼자 체험)일 때는 교사 역할까지 클라이언트가 스스로 수행합니다.
    같은 admin_code로 만든 1인 게임이라 권한 문제 없이 lg2_next_stage 등을 그대로 호출합니다. */
-async function freePlayAdvance(){
+async function freePlayAdvance(stage){
   if(!freePlay || !freePlayAdminCode) return;
+  if(stage != null) await aiActForStage(stage);
   await sb.rpc('lg2_next_stage', { p_code: freePlayAdminCode });
 }
 async function freePlayQuizStart(){
@@ -384,6 +399,72 @@ async function freePlayQuizReveal(){
 async function freePlayQuizNext(){
   if(!freePlay || !freePlayAdminCode) return { data:null };
   return await sb.rpc('lg2_quiz_next', { p_code: freePlayAdminCode });
+}
+
+/* AI 가상 상대 3명의 행동 로직. 실제 학생처럼 매 단계마다 "지금 형편에서 갈 수 있는
+   가장 좋은 선택지"를 그때그때 고릅니다(공부를 더 하거나 미래를 내다보지 않음) — 그래서
+   최종 결과 차이는 순전히 출발 자산(+운으로 맞힌 퀴즈 점수)에서 비롯됩니다. 실패는 조용히
+   무시합니다(이미 선택했거나 자격 미달 등) — 데모용 상대일 뿐 실패해도 게임 진행에는
+   지장이 없어야 하기 때문입니다. */
+const AI_CHOICE_FN = { 2:'lg2_kinder_pick', 4:'lg2_elem_pick', 6:'lg2_middle_pick', 8:'lg2_high_pick', 10:'lg2_college_pick' };
+const AI_OPTS_FN = { 2:'lg2_kinder_opts', 4:'lg2_elem_opts', 6:'lg2_middle_opts', 8:'lg2_high_opts', 10:'lg2_college_opts' };
+async function aiActOne(code, stage){
+  try{
+    if(AI_CHOICE_FN[stage]){
+      const { data: aiData } = await sb.rpc('lg2_me', { p_code: code });
+      const aiMe = aiData && aiData.me;
+      if(!aiMe || aiMe.ready) return;
+      const { data: opts } = await sb.rpc(AI_OPTS_FN[stage]);
+      const discount = Math.min(2, Math.floor((aiMe.assets||0)/30000)) + trackDiscount(aiMe, stage);
+      let best = null;
+      (opts||[]).forEach(o => {
+        const needsAbroad = o.requires_abroad_ms && !aiMe.studied_abroad_ms;
+        const need = Math.max(0, o.cutoff - discount);
+        const eligible = aiMe.academic_score >= need && (aiMe.assets||0) >= o.cost && !needsAbroad;
+        if(eligible && (!best || o.cost > best.cost)) best = o;
+      });
+      if(!best && opts && opts.length) best = opts.reduce((a,b) => (a.cost <= b.cost ? a : b));
+      if(best) await sb.rpc(AI_CHOICE_FN[stage], { p_join: code, p_choice: best.choice });
+    } else if(stage === 11){
+      const { data: aiData } = await sb.rpc('lg2_me', { p_code: code });
+      const aiMe = aiData && aiData.me;
+      if(!aiMe || aiMe.ready) return;
+      const { data: opts } = await sb.rpc('lg2_career_opts', { p_college: aiMe.college });
+      if(opts && opts.length){
+        const best = opts.reduce((a,b) => (b.salary > a.salary ? b : a));
+        await sb.rpc('lg2_career_pick', { p_join: code, p_choice: best.id });
+      }
+    } else if(stage === 12){
+      const { data: view } = await sb.rpc('lg2_network_view', { p_join: code });
+      const cards = view && view.cards;
+      if(cards && cards.length && (view.picked == null)){
+        const best = cards.reduce((a,b) => (b.bonus > a.bonus ? b : a));
+        await sb.rpc('lg2_network_pick', { p_join: code, p_card_id: best.id });
+      }
+    } else if(stage === 13){
+      const { data: aiData } = await sb.rpc('lg2_me', { p_code: code });
+      const aiMe = aiData && aiData.me;
+      if(!aiMe || aiMe.ready) return;
+      const { data: opts } = await sb.rpc('lg2_hobby_opts');
+      const affordable = (opts||[]).filter(o => o.cost <= (aiMe.assets||0));
+      const pool = affordable.length ? affordable : (opts||[]);
+      if(pool.length){
+        const best = pool.reduce((a,b) => (b.network_bonus > a.network_bonus ? b : a));
+        await sb.rpc('lg2_hobby_pick', { p_join: code, p_choice: best.choice });
+      }
+    }
+  } catch(e) { /* 이미 선택했거나 자격 미달 등 — 데모 상대이므로 조용히 넘어갑니다 */ }
+}
+async function aiActForStage(stage){
+  if(!aiCodes.length) return;
+  await Promise.all(aiCodes.map(code => aiActOne(code, stage)));
+}
+async function aiAnswerCurrentQuestion(){
+  if(!aiCodes.length) return;
+  await Promise.all(aiCodes.map(async code => {
+    try{ await sb.rpc('lg2_quiz_answer', { p_join: code, p_choice: Math.floor(Math.random()*4) }); }
+    catch(e){ /* 이미 답했거나 등 — 조용히 무시 */ }
+  }));
 }
 
 // freePlayBusy를 켜고 fn을 실행한 뒤 무조건(에러가 나도) 다시 끕니다.
@@ -413,11 +494,13 @@ $('btn-skip').onclick = async () => {
         const { data: qv } = await sb.rpc('lg2_quiz_view', { p_join: joinCode });
         if(!qv || !qv.active) break;
         if(qv.my_choice === null){ await sb.rpc('lg2_quiz_answer', { p_join: joinCode, p_choice: 0 }); }
+        await aiAnswerCurrentQuestion();
         await sb.rpc('lg_quiz_reveal', { p_code: freePlayAdminCode });
         const { data: nx } = await sb.rpc('lg2_quiz_next', { p_code: freePlayAdminCode });
         if(nx && nx.done) break;
       }
     }
+    if(g){ await aiActForStage(g.stage); }
     await sb.rpc('lg2_next_stage', { p_code: freePlayAdminCode });
   } catch(e) { /* 최선을 다해 시도 — 실패해도 아래에서 화면은 갱신됩니다 */ }
   lastQuizKey = null; renderedKey = null; renderedCareerKey = null; renderedNetworkKey = null;
@@ -440,12 +523,17 @@ function renderStepper(stage){
   if(now) now.scrollIntoView({ inline:'center', block:'nearest' });
 }
 
+function boardChipLabel(label){
+  if(label === '나') return '나';
+  if(label.startsWith('AI ')) return label.slice(3,4); // "AI 금수저" -> "금"
+  return label.replace('조','');
+}
 async function renderBoard(){
   if(!joinCode) return;
   const { data, error } = await sb.rpc('lg2_teams_public', { p_join: joinCode });
-  if(error || !data || !data.length) return;
-  if(freePlay){ $('board-wrap').classList.add('hidden'); return; } // 혼자 할 땐 트랙이 의미가 없어 숨김
+  if(error || !data || data.length < 2){ $('board-wrap').classList.add('hidden'); return; } // 비교할 상대가 없으면 트랙이 의미 없어 숨김
   $('board-wrap').classList.remove('hidden');
+  $('board-title-text').textContent = freePlay ? '🗺️ 나 vs AI 3명 자산 트랙' : '🗺️ 우리 반 자산 트랙';
   const maxAssets = Math.max(1, ...data.map(t => t.assets||0));
   const track = $('board-track');
   const myLabel = $('sb-label').textContent;
@@ -456,7 +544,7 @@ async function renderBoard(){
     chip.className = 'board-team' + (t.label === myLabel ? ' me' : '');
     chip.style.left = pct + '%';
     chip.title = `${t.label} · ${(t.assets||0).toLocaleString()}만원`;
-    chip.textContent = t.label.replace('조','');
+    chip.textContent = boardChipLabel(t.label);
     track.appendChild(chip);
   });
 }
@@ -479,7 +567,8 @@ async function pollInner(){
     $('join-msg').textContent = '입장 실패: 코드를 확인해주세요.';
     localStorage.removeItem('lg2_code');
     localStorage.removeItem('lg2_freeplay_admin');
-    freePlay = false; freePlayAdminCode = null;
+    localStorage.removeItem('lg2_freeplay_ai');
+    freePlay = false; freePlayAdminCode = null; aiCodes = [];
     clearInterval(pollTimer);
     show('view-join');
     showSkipButton(false);
@@ -551,7 +640,7 @@ $('btn-birth').onclick = async () => {
   rc.classList.add('show');
   $('birth-sub').textContent = '';
 
-  setTimeout(async () => { await withFreePlayLock(freePlayAdvance); poll(); }, 1800);
+  setTimeout(async () => { await withFreePlayLock(() => freePlayAdvance(1)); poll(); }, 1800);
 };
 
 async function renderChoice(me, g){
@@ -582,7 +671,7 @@ async function renderChoice(me, g){
     div.className = 'opt' + (eligible ? '' : ' locked');
     div.innerHTML = `<div class="t">${o.choice}</div>
       <div class="d">${o.note} · 비용 ${o.cost.toLocaleString()}만원${o.cutoff>0 ? ' · 필요 학업점수 '+need : ''}${needsAbroad ? ' · 중학교 유학 필요':''}${o.cutoff>0 && track>0 ? ' · 🎓 이전 트랙 보너스 -'+track:''}</div>`;
-    div.onclick = () => pickChoice(stageInfo.fn, o.choice);
+    div.onclick = () => pickChoice(stageInfo.fn, o.choice, g.stage);
     wrap.appendChild(div);
   });
   $('choice-msg').textContent = '';
@@ -590,12 +679,12 @@ async function renderChoice(me, g){
   show('view-choice');
 }
 
-async function pickChoice(fnName, choice){
+async function pickChoice(fnName, choice, stage){
   $('choice-msg').textContent = '처리 중…';
   const { data, error } = await sb.rpc(fnName, { p_join: joinCode, p_choice: choice });
   if(error){ $('choice-msg').textContent = error.message; return; }
   if(data.career){ $('choice-msg').textContent = `진로 확정: ${data.career} (연소득 ${data.pay.toLocaleString()}만원)`; }
-  await withFreePlayLock(freePlayAdvance);
+  await withFreePlayLock(() => freePlayAdvance(stage));
   renderedKey = null;
   setTimeout(poll, 400);
 }
@@ -629,7 +718,7 @@ async function pickCareer(choiceId){
   const { data, error } = await sb.rpc('lg2_career_pick', { p_join: joinCode, p_choice: choiceId });
   if(error){ $('career-msg').textContent = error.message; return; }
   $('career-msg').textContent = `진로 확정: ${data.career} (초임 ${data.pay.toLocaleString()}만원)`;
-  await withFreePlayLock(freePlayAdvance);
+  await withFreePlayLock(() => freePlayAdvance(11));
   renderedCareerKey = null;
   setTimeout(poll, 400);
 }
@@ -665,7 +754,7 @@ async function pickNetworkCard(cardId){
   const { data, error } = await sb.rpc('lg2_network_pick', { p_join: joinCode, p_card_id: cardId });
   if(error){ $('network-msg').textContent = error.message; return; }
   $('network-msg').textContent = `카드 선택: ${data.card} (자산 +${data.bonus.toLocaleString()}만원)`;
-  await withFreePlayLock(freePlayAdvance);
+  await withFreePlayLock(() => freePlayAdvance(12));
   renderedNetworkKey = null;
   setTimeout(poll, 400);
 }
@@ -702,7 +791,7 @@ async function pickHobby(choice){
   const { data, error } = await sb.rpc('lg2_hobby_pick', { p_join: joinCode, p_choice: choice });
   if(error){ $('hobby-msg').textContent = error.message; return; }
   $('hobby-msg').textContent = `취미 선택: ${data.choice} (네트워크 +${data.bonus.toLocaleString()}만원)`;
-  await withFreePlayLock(freePlayAdvance);
+  await withFreePlayLock(() => freePlayAdvance(13));
   renderedHobbyKey = null;
   setTimeout(poll, 400);
 }
@@ -725,7 +814,7 @@ async function renderQuiz(me, g){
     setTheory('quiz-theory', g.stage);
     show('view-quiz');
     if(freePlay && !freePlayBusy){
-      await withFreePlayLock(freePlayQuizStart);
+      await withFreePlayLock(async () => { await freePlayQuizStart(); await aiAnswerCurrentQuestion(); });
       setTimeout(poll, 300);
     }
     return;
@@ -757,7 +846,7 @@ async function renderQuiz(me, g){
       if(data.phase === 'reveal' && data.my_choice !== null && i !== data.my_choice && i !== data.answer_index) b.classList.add('fade');
       b.textContent = c;
       b.disabled = (data.my_choice !== null) || data.phase !== 'question';
-      b.onclick = () => submitQuiz(i, b, wrap);
+      b.onclick = () => submitQuiz(i, b, wrap, g.stage);
       wrap.appendChild(b);
     });
   }
@@ -777,7 +866,7 @@ async function renderQuiz(me, g){
   show('view-quiz');
 }
 
-async function submitQuiz(choiceIdx, btnEl, wrap){
+async function submitQuiz(choiceIdx, btnEl, wrap, stage){
   submitting = true;
   Array.from(wrap.children).forEach(el => el.disabled = true);
   btnEl.classList.add('picked');
@@ -807,7 +896,8 @@ async function submitQuiz(choiceIdx, btnEl, wrap){
       await new Promise(res => setTimeout(res, 1800));
       const r = await freePlayQuizNext();
       nextData = r && r.data;
-      if(nextData && nextData.done){ await freePlayAdvance(); }
+      if(nextData && !nextData.done){ await aiAnswerCurrentQuestion(); }
+      if(nextData && nextData.done){ await freePlayAdvance(stage); }
     });
     lastQuizKey = null;
     poll();
@@ -838,6 +928,43 @@ function computeBadges(myLabel, data){
   return badges;
 }
 
+function renderContrastSummary(data, myLabel){
+  const byLabel = {};
+  data.forEach(t => { byLabel[t.label] = t; });
+  const me = byLabel[myLabel];
+  const rich = byLabel['AI 금수저'];
+  const poor = byLabel['AI 흙수저'];
+  const mid = byLabel['AI 평균'];
+  if(!me || !rich || !poor || !mid) return; // AI 상대 없이 만든 예전 프리플레이 게임 등 방어
+
+  const rows = [
+    { label:'나', t: me, mine:true },
+    { label:'AI 금수저', t: rich },
+    { label:'AI 평균', t: mid },
+    { label:'AI 흙수저', t: poor },
+  ];
+  const myTier = tierFor(me.born_assets);
+  let note;
+  if(myTier.id === 'soil' || myTier.id === 'bronze'){
+    note = '같은 5문제 퀴즈, 같은 선택지 구조였는데도 금수저 AI는 시작부터 앞서 있었죠. 같은 노력이라도 출발선에 따라 결과가 이만큼 갈립니다.';
+  } else if(myTier.id === 'diamond' || myTier.id === 'gold'){
+    note = '당신도 유리한 가문에서 출발했어요. 흙수저 AI와의 격차를 보면, 출발선이 결과에 얼마나 영향을 미쳤는지 가늠할 수 있어요.';
+  } else {
+    note = '출발선의 차이가 게임이 진행될수록 어떻게 벌어지는지, 위 숫자로 직접 비교해보세요.';
+  }
+
+  const box = document.createElement('div');
+  box.className = 'contrast-box';
+  box.innerHTML = `<div class="contrast-title">📊 출발선 대조 — 나 vs AI 3명</div>` +
+    rows.map(r => `<div class="contrast-row${r.mine ? ' mine' : ''}">
+        <span>${r.label} <span class="sub">(${tierFor(r.t.born_assets).name})</span></span>
+        <span class="money">${(r.t.assets||0).toLocaleString()}만원</span>
+      </div>`).join('') +
+    `<div class="contrast-note">${note}</div>`;
+  const badgeRow = $('badge-row');
+  badgeRow.parentElement.insertBefore(box, badgeRow.nextSibling);
+}
+
 async function renderFinal(me){
   const { data, error } = await sb.rpc('lg2_leaderboard', { p_join: joinCode });
   const wrap = $('final-list');
@@ -865,6 +992,8 @@ async function renderFinal(me){
     tag.className = 'freeplay-tag';
     tag.textContent = '🎮 프리플레이로 완료했어요';
     wrap.parentElement.insertBefore(tag, wrap);
+
+    if(!error) renderContrastSummary(data, myLabel);
   }
   show('view-ended');
 }
