@@ -13,12 +13,17 @@
   }
   *{box-sizing:border-box;}
   body{
-    margin:0; background:var(--bg); color:var(--text); min-height:100vh;
+    margin:0; background:
+      radial-gradient(900px 480px at 15% -10%, #17233d, transparent 60%),
+      radial-gradient(700px 420px at 105% 0%, #142032, transparent 55%),
+      var(--bg);
+    color:var(--text); min-height:100vh;
     font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
     display:flex; flex-direction:column; align-items:center; padding:16px 14px 50px;
   }
-  h1{ font-size:17px; color:var(--accent); margin:6px 0 14px; }
-  .card{ background:var(--card); border-radius:16px; padding:20px; width:100%; max-width:440px; box-shadow:0 8px 24px rgba(0,0,0,.3); margin-bottom:14px; }
+  h1{ font-size:17px; color:var(--accent); margin:6px 0 12px; letter-spacing:.02em; }
+  .card{ background:var(--card); border-radius:18px; padding:20px; width:100%; max-width:440px; box-shadow:0 10px 28px -8px rgba(0,0,0,.4); margin-bottom:14px; animation:riseIn .35s cubic-bezier(.2,.8,.2,1); }
+  @keyframes riseIn{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
   input[type=text]{
     width:100%; padding:14px; font-size:18px; border-radius:10px; border:1px solid #2a3b57;
     background:var(--card2); color:var(--text); margin-bottom:10px; outline:none;
@@ -28,13 +33,54 @@
     background:var(--accent); color:#04222a; cursor:pointer; margin-top:8px;
   }
   button:disabled{ opacity:.4; }
-  .statusbar{ display:flex; justify-content:space-between; width:100%; max-width:440px; margin-bottom:10px; font-size:13px; color:var(--sub); }
+  .statusbar{
+    display:flex; align-items:center; gap:8px; width:100%; max-width:440px; margin-bottom:4px; font-size:13px; color:var(--sub);
+    background:color-mix(in srgb, var(--card) 85%, transparent); border:1px solid #223252; border-radius:999px;
+    padding:8px 14px;
+  }
+  .statusbar .sb-label{ font-weight:800; color:var(--text); }
+  .statusbar .sb-stats{ margin-left:auto; display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end; }
   .statusbar b{ color:var(--gold); }
+  .tierchip{
+    display:inline-flex; align-items:center; gap:4px; font-size:11.5px; font-weight:800;
+    padding:3px 9px; border-radius:999px; white-space:nowrap;
+  }
+
+  /* ---- life path stepper (board-game style progress row) ---- */
+  .stepper-wrap{ width:100%; max-width:440px; overflow-x:auto; margin-bottom:12px; -webkit-overflow-scrolling:touch; }
+  .stepper{ display:flex; gap:4px; padding:4px 2px; width:max-content; }
+  .step{
+    display:flex; flex-direction:column; align-items:center; gap:3px; width:42px; flex:0 0 auto;
+  }
+  .step-dot{
+    width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    background:var(--card2); border:2px solid #2a3b57; font-size:13px; transition:all .2s ease;
+  }
+  .step.done .step-dot{ background:var(--good); border-color:var(--good); }
+  .step.now .step-dot{ background:var(--gold); border-color:var(--gold); transform:scale(1.18); box-shadow:0 0 0 4px color-mix(in srgb, var(--gold) 25%, transparent); }
+  .step-label{ font-size:9px; color:var(--sub); text-align:center; line-height:1.2; }
+  .step.now .step-label{ color:var(--gold); font-weight:800; }
+
+  /* ---- wealth racetrack (shared "society" view) ---- */
+  .board{ background:var(--card); border-radius:16px; padding:16px 16px 20px; width:100%; max-width:440px; margin-bottom:14px; border:1px solid #223252; }
+  .board-title{ font-size:12.5px; font-weight:800; color:var(--sub); text-transform:uppercase; letter-spacing:.04em; margin-bottom:12px; display:flex; align-items:center; gap:6px; }
+  .board-track{ position:relative; height:40px; background:linear-gradient(90deg,#3a2a1c,#5a4020,#8a6a1f,#b4841f,#d4af37,#8fa8e0); border-radius:999px; margin:18px 4px 6px; }
+  .board-team{
+    position:absolute; top:50%; transform:translate(-50%,-50%); width:26px; height:26px; border-radius:50%;
+    background:var(--card2); border:2px solid var(--text); display:flex; align-items:center; justify-content:center;
+    font-size:11px; font-weight:800; color:var(--text); transition:left .6s cubic-bezier(.2,.8,.2,1);
+    box-shadow:0 2px 6px rgba(0,0,0,.4);
+  }
+  .board-team.me{ border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent); z-index:2; }
+  .board-legend{ display:flex; justify-content:space-between; font-size:10px; color:var(--sub); padding:0 4px; }
+
   .stagelabel{ text-align:center; font-weight:800; font-size:17px; margin-bottom:6px; }
   .opt{
     width:100%; text-align:left; background:var(--card2); border:1px solid #2a3b57; border-radius:12px;
-    padding:14px 16px; margin-top:10px; color:var(--text); cursor:pointer;
+    padding:14px 16px; margin-top:10px; color:var(--text); cursor:pointer; transition:transform .12s ease, border-color .12s ease;
   }
+  .opt:not(.locked):active{ transform:scale(.98); }
+  .opt:not(.locked):hover{ border-color:var(--accent); }
   .opt .t{ font-weight:800; font-size:15px; }
   .opt .d{ font-size:12px; color:var(--sub); margin-top:4px; }
   .opt.locked{ opacity:.35; }
@@ -61,9 +107,39 @@
   .sub{ color:var(--sub); font-size:13px; }
   .money{ color:var(--gold); font-weight:800; }
   .hidden{ display:none !important; }
-  .lbrow{ display:flex; justify-content:space-between; padding:10px 14px; background:var(--card2); border-radius:10px; margin-bottom:8px; font-size:14px; }
+  .lbrow{ display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:var(--card2); border-radius:10px; margin-bottom:8px; font-size:14px; }
   .lbrow.me{ outline:2px solid var(--accent); }
+  .lbrow.top{ outline:2px solid var(--gold); }
   .rank{ color:var(--gold); font-weight:800; margin-right:8px; }
+
+  /* ---- birth roulette + reveal ---- */
+  .wheel-wrap{ display:flex; justify-content:center; margin:6px 0 16px; }
+  .wheel{
+    width:150px; height:150px; border-radius:50%; position:relative;
+    background:conic-gradient(#8b6a4a 0deg 72deg, #b4841f 72deg 144deg, #93a3b8 144deg 216deg, #eab308 216deg 288deg, #93a5ea 288deg 360deg);
+    border:5px solid var(--card2); box-shadow:0 8px 24px -6px rgba(0,0,0,.5);
+    transition:transform 1.4s cubic-bezier(.15,.85,.2,1);
+  }
+  .wheel.spin{ transform:rotate(1800deg); }
+  .wheel-pin{
+    position:absolute; top:-13px; left:50%; transform:translateX(-50%);
+    width:0; height:0; border-left:9px solid transparent; border-right:9px solid transparent; border-top:16px solid var(--text);
+  }
+  .reveal-card{
+    border-radius:14px; padding:18px; text-align:center; margin-top:8px; animation:flipIn .5s ease;
+    border:2px solid; display:none;
+  }
+  .reveal-card.show{ display:block; }
+  @keyframes flipIn{ from{opacity:0; transform:scale(.9) rotateX(25deg);} to{opacity:1; transform:scale(1) rotateX(0);} }
+  .reveal-emoji{ font-size:36px; margin-bottom:4px; }
+  .reveal-name{ font-weight:800; font-size:18px; margin-bottom:6px; }
+
+  /* ---- badges ---- */
+  .badge-row{ display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin:14px 0 4px; }
+  .badge-pill{
+    display:inline-flex; align-items:center; gap:6px; padding:7px 13px; border-radius:999px;
+    background:var(--card2); border:1px solid #2a3b57; font-weight:800; font-size:12px;
+  }
 </style>
 </head>
 <body>
@@ -76,14 +152,34 @@
 </div>
 
 <div class="statusbar hidden" id="statusbar">
-  <span id="sb-label"></span>
-  <span>자산 <b id="sb-assets">0</b>만원 · 학업점수 <b id="sb-score">0</b></span>
+  <span class="sb-label" id="sb-label"></span>
+  <span class="sb-stats">
+    <span id="sb-tier"></span>
+    <span>💰 <b id="sb-assets">0</b>만원</span>
+    <span>📚 <b id="sb-score">0</b>점</span>
+  </span>
+</div>
+
+<div class="stepper-wrap hidden" id="stepper-wrap">
+  <div class="stepper" id="stepper"></div>
+</div>
+
+<div class="board hidden" id="board-wrap">
+  <div class="board-title">🗺️ 우리 반 자산 트랙</div>
+  <div class="board-track" id="board-track"></div>
+  <div class="board-legend"><span>0만원</span><span>자산 많은 순 →</span></div>
 </div>
 
 <div class="card hidden center" id="view-birth">
   <div class="stagelabel">① 출생</div>
-  <div class="sub" id="birth-sub">운명의 주사위를 굴려 부모님의 재산을 확인하세요.</div>
-  <button id="btn-birth">🎲 주사위 굴리기</button>
+  <div class="sub" id="birth-sub">돌림판을 돌려 태어날 가문을 확인하세요.</div>
+  <div class="wheel-wrap"><div class="wheel" id="wheel"><div class="wheel-pin"></div></div></div>
+  <button id="btn-birth">🎲 돌림판 돌리기</button>
+  <div class="reveal-card" id="birth-reveal">
+    <div class="reveal-emoji" id="birth-emoji"></div>
+    <div class="reveal-name" id="birth-name"></div>
+    <div class="sub" id="birth-detail"></div>
+  </div>
 </div>
 
 <div class="card hidden" id="view-choice">
@@ -120,6 +216,7 @@
 <div class="card hidden center" id="view-ended">
   <div class="stagelabel">🏁 최종 결과</div>
   <div id="final-list" style="margin-top:10px;"></div>
+  <div class="badge-row" id="badge-row"></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -134,16 +231,32 @@ function show(id){ views.forEach(v => $(v).classList.toggle('hidden', v!==id)); 
 const STAGE_NAMES = {1:'① 출생',2:'② 유치원 선택',3:'③ 초등 입시 퀴즈',4:'④ 초등학교 선택',
   5:'⑤ 중학교 입시 퀴즈',6:'⑥ 중학교 선택',7:'⑦ 고등학교 입시 퀴즈',8:'⑧ 고등학교 선택',
   9:'⑨ 대학 입시 퀴즈',10:'⑩ 대학 선택',11:'⑪ 직업 선택',12:'⑫ 네트워크 카드'};
+const STAGE_ICONS = {1:'🎲',2:'🧸',3:'📝',4:'🏫',5:'📝',6:'🏫',7:'📝',8:'🏫',9:'📝',10:'🎓',11:'💼',12:'🤝'};
+const STAGE_SHORT = {1:'출생',2:'유치원',3:'초등퀴즈',4:'초등',5:'중등퀴즈',6:'중등',7:'고등퀴즈',8:'고등',9:'대입퀴즈',10:'대학',11:'직업',12:'카드'};
 const CHOICE_STAGE = { 2:{fn:'lg2_kinder_pick', opts:'lg2_kinder_opts', title:'② 유치원을 선택하세요'},
   4:{fn:'lg2_elem_pick', opts:'lg2_elem_opts', title:'④ 초등학교를 선택하세요'},
   6:{fn:'lg2_middle_pick', opts:'lg2_middle_opts', title:'⑥ 중학교를 선택하세요'},
   8:{fn:'lg2_high_pick', opts:'lg2_high_opts', title:'⑧ 고등학교를 선택하세요'},
   10:{fn:'lg2_college_pick', opts:'lg2_college_opts', title:'⑩ 대학교를 선택하세요'} };
 
+/* 가문(출발 계층) — 물려받은 자산 규모로 정하는 순수 연출용 등급. 실제 게임 로직에는 영향 없음. */
+const TIERS = [
+  { min:100000, id:'diamond', name:'다이아몬드 가문', emoji:'💎', color:'#93a5ea' },
+  { min:25000,  id:'gold',    name:'골드 가문',       emoji:'🥇', color:'#eab308' },
+  { min:8000,   id:'silver',  name:'실버 가문',       emoji:'🥈', color:'#93a3b8' },
+  { min:1500,   id:'bronze',  name:'브론즈 가문',     emoji:'🥉', color:'#b4841f' },
+  { min:0,      id:'soil',    name:'흙수저',         emoji:'🌱', color:'#4ade80' },
+];
+function tierFor(bornAssets){ return TIERS.find(t => (bornAssets||0) >= t.min) || TIERS[TIERS.length-1]; }
+function tierChipHtml(bornAssets){
+  const t = tierFor(bornAssets);
+  return `<span class="tierchip" style="background:color-mix(in srgb, ${t.color} 22%, var(--card2)); color:${t.color};">${t.emoji} ${t.name}</span>`;
+}
+
 const urlCode = new URLSearchParams(location.search).get('code');
 if(urlCode) $('in-code').value = urlCode;
 
-let joinCode = null, pollTimer = null, renderedKey = null;
+let joinCode = null, pollTimer = null, renderedKey = null, myBornAssets = 0;
 
 function restore(){ const c = localStorage.getItem('lg2_code'); if(c) return c; return null; }
 const saved = restore();
@@ -162,6 +275,42 @@ function startAfterJoin(){
   pollTimer = setInterval(poll, 1500);
 }
 
+function renderStepper(stage){
+  const wrap = $('stepper-wrap');
+  wrap.classList.remove('hidden');
+  const el = $('stepper');
+  el.innerHTML = '';
+  for(let s=1; s<=12; s++){
+    const cell = document.createElement('div');
+    cell.className = 'step' + (s < stage ? ' done' : s === stage ? ' now' : '');
+    cell.innerHTML = `<div class="step-dot">${s<stage ? '✓' : STAGE_ICONS[s]}</div><div class="step-label">${STAGE_SHORT[s]}</div>`;
+    el.appendChild(cell);
+  }
+  const now = el.querySelector('.step.now');
+  if(now) now.scrollIntoView({ inline:'center', block:'nearest' });
+}
+
+let boardTimer = 0;
+async function renderBoard(){
+  if(!joinCode) return;
+  const { data, error } = await sb.rpc('lg2_teams_public', { p_join: joinCode });
+  if(error || !data || !data.length) return;
+  $('board-wrap').classList.remove('hidden');
+  const maxAssets = Math.max(1, ...data.map(t => t.assets||0));
+  const track = $('board-track');
+  const myLabel = $('sb-label').textContent;
+  track.innerHTML = '';
+  data.forEach(t => {
+    const pct = Math.min(96, Math.max(4, Math.round(Math.log10((t.assets||0)+1) / Math.log10(maxAssets+1) * 92) + 4));
+    const chip = document.createElement('div');
+    chip.className = 'board-team' + (t.label === myLabel ? ' me' : '');
+    chip.style.left = pct + '%';
+    chip.title = `${t.label} · ${(t.assets||0).toLocaleString()}만원`;
+    chip.textContent = t.label.replace('조','');
+    track.appendChild(chip);
+  });
+}
+
 async function poll(){
   const { data, error } = await sb.rpc('lg2_me', { p_code: joinCode });
   if(error){
@@ -172,17 +321,24 @@ async function poll(){
     return;
   }
   const me = data.me, g = data.game;
+  myBornAssets = me.born_assets || 0;
 
   $('statusbar').classList.remove('hidden');
   $('sb-label').textContent = me.label;
   $('sb-assets').textContent = (me.assets||0).toLocaleString();
   $('sb-score').textContent = me.academic_score;
+  $('sb-tier').innerHTML = g.stage > 1 ? tierChipHtml(me.born_assets) : '';
 
   if(g.status === 'finished'){
     clearInterval(pollTimer);
-    await renderFinal();
+    $('stepper-wrap').classList.add('hidden');
+    $('board-wrap').classList.add('hidden');
+    await renderFinal(me);
     return;
   }
+
+  renderStepper(g.stage);
+  if(g.stage > 1){ renderBoard(); } else { $('board-wrap').classList.add('hidden'); }
 
   if(g.stage === 1){ return renderBirth(me, g); }
   if(CHOICE_STAGE[g.stage]){ return renderChoice(me, g); }
@@ -193,17 +349,40 @@ async function poll(){
 
 function renderBirth(me, g){
   if(me.ready){
-    $('waiting-msg').innerHTML = `출발 자산 <b class="money">${(me.born_assets||0).toLocaleString()}만원</b> · 형제 ${me.siblings}명<br><span class="sub">다음 단계를 기다리는 중…</span>`;
+    const t = tierFor(me.born_assets);
+    $('waiting-msg').innerHTML = `${t.emoji} <b style="color:${t.color}">${t.name}</b>에서 출발!<br>
+      자산 <b class="money">${(me.born_assets||0).toLocaleString()}만원</b> · 형제 ${me.siblings}명<br>
+      <span class="sub">다음 단계를 기다리는 중…</span>`;
     show('view-waiting');
   } else {
+    $('birth-reveal').classList.remove('show');
+    $('wheel').classList.remove('spin');
     show('view-birth');
   }
 }
 $('btn-birth').onclick = async () => {
   $('btn-birth').disabled = true;
-  const { data, error } = await sb.rpc('lg_birth', { p_join: joinCode });
-  if(error){ $('birth-sub').textContent = error.message; $('btn-birth').disabled=false; return; }
-  poll();
+  $('birth-sub').textContent = '돌림판이 돌아가는 중…';
+  $('wheel').classList.add('spin');
+
+  const rpcPromise = sb.rpc('lg_birth', { p_join: joinCode });
+  const spinDelay = new Promise(res => setTimeout(res, 1500));
+  const [{ data, error }] = await Promise.all([rpcPromise, spinDelay]);
+
+  if(error){ $('birth-sub').textContent = error.message; $('btn-birth').disabled=false; $('wheel').classList.remove('spin'); return; }
+
+  const t = tierFor(data.assets);
+  $('birth-emoji').textContent = t.emoji;
+  $('birth-name').textContent = t.name;
+  $('birth-name').style.color = t.color;
+  $('birth-detail').textContent = `자산 ${data.assets.toLocaleString()}만원 · 형제 ${data.siblings}명`;
+  const rc = $('birth-reveal');
+  rc.style.borderColor = t.color;
+  rc.style.background = `color-mix(in srgb, ${t.color} 12%, var(--card2))`;
+  rc.classList.add('show');
+  $('birth-sub').textContent = '';
+
+  setTimeout(poll, 1800);
 };
 
 async function renderChoice(me, g){
@@ -391,16 +570,45 @@ async function submitQuiz(choiceIdx, btnEl, wrap){
   poll();
 }
 
-async function renderFinal(){
+function computeBadges(myLabel, data){
+  const badges = [{ emoji:'🏁', text:'완주자' }];
+  if(!data.length) return badges;
+  const sorted = [...data].sort((a,b)=>(b.assets||0)-(a.assets||0));
+  const myIdx = sorted.findIndex(t => t.label === myLabel);
+  const me = sorted[myIdx];
+  if(!me) return badges;
+  const topHalf = myIdx < Math.ceil(sorted.length/2);
+  const bornSorted = [...data].sort((a,b)=>(b.born_assets||0)-(a.born_assets||0));
+  const bornIdx = bornSorted.findIndex(t => t.label === myLabel);
+  const bornTopHalf = bornIdx < Math.ceil(bornSorted.length/2);
+  if(myIdx === 0) badges.push({ emoji:'👑', text:'자산 1위' });
+  if(!bornTopHalf && topHalf) badges.push({ emoji:'🚀', text:'흙수저 탈출' });
+  if(bornTopHalf && !topHalf) badges.push({ emoji:'📉', text:'가문 자산을 지키지 못함' });
+  if(bornTopHalf && topHalf) badges.push({ emoji:'🏰', text:'부의 대물림' });
+  if(myIdx === sorted.length-1 && sorted.length>1) badges.push({ emoji:'🌱', text:'다음 생엔 더 잘할 거예요' });
+  return badges;
+}
+
+async function renderFinal(me){
   const { data, error } = await sb.rpc('lg2_leaderboard', { p_join: joinCode });
   const wrap = $('final-list');
   wrap.innerHTML = '';
+  const myLabel = $('sb-label').textContent;
   if(!error){
     data.forEach((t,i) => {
       const row = document.createElement('div');
-      row.className = 'lbrow' + (t.label === $('sb-label').textContent ? ' me' : '');
-      row.innerHTML = `<span><span class="rank">${i+1}</span>${t.label} · ${t.college||''} · ${t.career||''}${t.card ? ' · '+t.card : ''}</span><span class="money">${(t.assets||0).toLocaleString()}만원</span>`;
+      row.className = 'lbrow' + (t.label === myLabel ? ' me' : '') + (i===0 ? ' top' : '');
+      row.innerHTML = `<span><span class="rank">${i+1}</span>${i===0?'👑 ':''}${t.label} · ${t.college||''} · ${t.career||''}${t.card ? ' · '+t.card : ''}</span><span class="money">${(t.assets||0).toLocaleString()}만원</span>`;
       wrap.appendChild(row);
+    });
+    const badges = computeBadges(myLabel, data);
+    const brow = $('badge-row');
+    brow.innerHTML = '';
+    badges.forEach(b => {
+      const pill = document.createElement('span');
+      pill.className = 'badge-pill';
+      pill.innerHTML = `${b.emoji} ${b.text}`;
+      brow.appendChild(pill);
     });
   }
   show('view-ended');
