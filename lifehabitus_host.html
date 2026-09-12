@@ -12,13 +12,17 @@
   }
   *{box-sizing:border-box;}
   body{
-    margin:0; background:var(--bg); color:var(--text); min-height:100vh;
+    margin:0; background:
+      radial-gradient(1100px 560px at 12% -8%, #17233d, transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, #142032, transparent 55%),
+      var(--bg);
+    color:var(--text); min-height:100vh;
     font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
     padding:20px 14px 60px;
   }
-  h1{ text-align:center; color:var(--accent); font-size:20px; margin-bottom:20px; }
+  h1{ text-align:center; color:var(--accent); font-size:20px; margin-bottom:20px; letter-spacing:.02em; }
   .wrap{ max-width:900px; margin:0 auto; }
-  .card{ background:var(--card); border-radius:16px; padding:20px; margin-bottom:16px; box-shadow:0 8px 24px rgba(0,0,0,.25); }
+  .card{ background:var(--card); border-radius:18px; padding:20px; margin-bottom:16px; box-shadow:0 10px 28px -8px rgba(0,0,0,.4); }
   label{ display:block; font-size:13px; color:var(--sub); margin-bottom:6px; margin-top:12px; }
   input[type=text], input[type=number]{
     width:100%; padding:12px 14px; font-size:15px; border-radius:10px; border:1px solid #2a3b57;
@@ -31,9 +35,26 @@
   button.secondary{ background:var(--card2); color:var(--text); border:1px solid #2a3b57; }
   button.danger{ background:var(--bad); color:#fff; }
   button:disabled{ opacity:.4; cursor:default; }
-  .stagebar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+  .stagebar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; }
   .stagebar .name{ font-size:18px; font-weight:800; }
   .stagebar .prog{ color:var(--sub); font-size:13px; }
+
+  .stepper{ display:flex; gap:6px; overflow-x:auto; padding:10px 2px 14px; }
+  .step{ display:flex; flex-direction:column; align-items:center; gap:4px; width:64px; flex:0 0 auto; }
+  .step-dot{ width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    background:var(--card2); border:2px solid #2a3b57; font-size:15px; transition:all .2s ease; }
+  .step.done .step-dot{ background:var(--good); border-color:var(--good); }
+  .step.now .step-dot{ background:var(--gold); border-color:var(--gold); transform:scale(1.15); box-shadow:0 0 0 5px color-mix(in srgb, var(--gold) 22%, transparent); }
+  .step-label{ font-size:10.5px; color:var(--sub); text-align:center; }
+  .step.now .step-label{ color:var(--gold); font-weight:800; }
+
+  .board-title{ font-size:12.5px; font-weight:800; color:var(--sub); text-transform:uppercase; letter-spacing:.04em; margin-bottom:2px; display:flex; align-items:center; gap:6px; }
+  .board-track{ position:relative; height:46px; background:linear-gradient(90deg,#3a2a1c,#5a4020,#8a6a1f,#b4841f,#d4af37,#8fa8e0); border-radius:999px; margin:20px 6px 8px; }
+  .board-team{ position:absolute; top:50%; transform:translate(-50%,-50%); width:30px; height:30px; border-radius:50%;
+    background:var(--card2); border:2px solid var(--text); display:flex; align-items:center; justify-content:center;
+    font-size:12px; font-weight:800; color:var(--text); transition:left .6s cubic-bezier(.2,.8,.2,1); box-shadow:0 2px 6px rgba(0,0,0,.4); cursor:default; }
+  .board-legend{ display:flex; justify-content:space-between; font-size:11px; color:var(--sub); padding:0 6px 4px; }
+
   .qrgrid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:12px; margin-top:10px; }
   .qritem{ background:var(--card2); border-radius:12px; padding:10px; text-align:center; }
   .qritem img{ width:100%; border-radius:8px; background:#fff; padding:4px; }
@@ -44,6 +65,7 @@
   th{ color:var(--sub); font-weight:600; }
   .badge{ display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; background:var(--card2); }
   .badge.ready{ background:var(--good); color:#04220f; }
+  .tierchip{ display:inline-flex; align-items:center; gap:3px; font-size:11px; font-weight:800; padding:2px 8px; border-radius:999px; }
   .qbig{ font-size:20px; font-weight:800; text-align:center; margin:8px 0 14px; }
   .choicebox{ background:var(--card2); border-radius:10px; padding:10px 14px; margin-bottom:6px; display:flex; justify-content:space-between; }
   .choicebox.right{ outline:2px solid var(--good); }
@@ -51,7 +73,7 @@
   .money{ color:var(--gold); font-weight:700; }
   .hidden{ display:none !important; }
   .sub{ color:var(--sub); font-size:13px; }
-  .rankrow{ display:flex; justify-content:space-between; padding:12px 16px; background:var(--card2); border-radius:10px; margin-bottom:8px; }
+  .rankrow{ display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:var(--card2); border-radius:10px; margin-bottom:8px; }
   .rankrow:first-child{ outline:2px solid var(--gold); }
 </style>
 </head>
@@ -80,6 +102,11 @@
     <span class="name" id="stage-name"></span>
     <span class="prog" id="stage-prog"></span>
   </div>
+  <div class="stepper" id="stepper"></div>
+
+  <div class="board-title">🗺️ 우리 반 자산 트랙 (전체 화면 공유용)</div>
+  <div class="board-track" id="board-track"></div>
+  <div class="board-legend"><span>0만원</span><span>자산 많은 순 →</span></div>
 
   <div id="quiz-panel" class="hidden">
     <div class="qbig" id="qz-question"></div>
@@ -97,7 +124,7 @@
   </div>
 
   <table id="team-table">
-    <thead><tr><th>조</th><th>자산(만원)</th><th>학업점수</th><th>현재 선택</th><th>상태</th></tr></thead>
+    <thead><tr><th>조</th><th>가문</th><th>자산(만원)</th><th>학업점수</th><th>현재 선택</th><th>상태</th></tr></thead>
     <tbody id="team-tbody"></tbody>
   </table>
 </div>
@@ -120,7 +147,23 @@ let teacherCode = null, pollTimer = null;
 const STAGE_NAMES = {1:'① 출생',2:'② 유치원 선택',3:'③ 초등 입시 퀴즈',4:'④ 초등학교 선택',
   5:'⑤ 중학교 입시 퀴즈',6:'⑥ 중학교 선택',7:'⑦ 고등학교 입시 퀴즈',8:'⑧ 고등학교 선택',
   9:'⑨ 대학 입시 퀴즈',10:'⑩ 대학 선택',11:'⑪ 직업 선택',12:'⑫ 네트워크 카드'};
+const STAGE_ICONS = {1:'🎲',2:'🧸',3:'📝',4:'🏫',5:'📝',6:'🏫',7:'📝',8:'🏫',9:'📝',10:'🎓',11:'💼',12:'🤝'};
+const STAGE_SHORT = {1:'출생',2:'유치원',3:'초등퀴즈',4:'초등',5:'중등퀴즈',6:'중등',7:'고등퀴즈',8:'고등',9:'대입퀴즈',10:'대학',11:'직업',12:'카드'};
 const QUIZ_STAGES = [3,5,7,9];
+
+/* 가문(출발 계층) — 물려받은 자산 규모로 정하는 순수 연출용 등급. */
+const TIERS = [
+  { min:100000, id:'diamond', name:'다이아몬드', emoji:'💎', color:'#93a5ea' },
+  { min:25000,  id:'gold',    name:'골드',       emoji:'🥇', color:'#eab308' },
+  { min:8000,   id:'silver',  name:'실버',       emoji:'🥈', color:'#93a3b8' },
+  { min:1500,   id:'bronze',  name:'브론즈',     emoji:'🥉', color:'#b4841f' },
+  { min:0,      id:'soil',    name:'흙수저',     emoji:'🌱', color:'#4ade80' },
+];
+function tierFor(bornAssets){ return TIERS.find(t => (bornAssets||0) >= t.min) || TIERS[TIERS.length-1]; }
+function tierChipHtml(bornAssets){
+  const t = tierFor(bornAssets);
+  return `<span class="tierchip" style="background:color-mix(in srgb, ${t.color} 22%, var(--card2)); color:${t.color};">${t.emoji} ${t.name}</span>`;
+}
 
 $('btn-create').onclick = async () => {
   const title = $('in-title').value.trim() || '인생 게임: 아비투스';
@@ -159,6 +202,34 @@ function startPolling(){
   pollTimer = setInterval(refresh, 1800);
 }
 
+function renderStepper(stage){
+  const el = $('stepper');
+  el.innerHTML = '';
+  for(let s=1; s<=12; s++){
+    const cell = document.createElement('div');
+    cell.className = 'step' + (s < stage ? ' done' : s === stage ? ' now' : '');
+    cell.innerHTML = `<div class="step-dot">${s<stage ? '✓' : STAGE_ICONS[s]}</div><div class="step-label">${STAGE_SHORT[s]}</div>`;
+    el.appendChild(cell);
+  }
+  const now = el.querySelector('.step.now');
+  if(now) now.scrollIntoView({ inline:'center', block:'nearest' });
+}
+
+function renderBoard(teams){
+  const track = $('board-track');
+  track.innerHTML = '';
+  const maxAssets = Math.max(1, ...teams.map(t => t.assets||0));
+  teams.forEach(t => {
+    const pct = Math.min(96, Math.max(4, Math.round(Math.log10((t.assets||0)+1) / Math.log10(maxAssets+1) * 92) + 4));
+    const chip = document.createElement('div');
+    chip.className = 'board-team';
+    chip.style.left = pct + '%';
+    chip.title = `${t.label} · ${(t.assets||0).toLocaleString()}만원`;
+    chip.textContent = t.label.replace('조','');
+    track.appendChild(chip);
+  });
+}
+
 let lastStage = null;
 async function refresh(){
   const { data, error } = await sb.rpc('lg2_state', { p_code: teacherCode });
@@ -172,6 +243,8 @@ async function refresh(){
   $('stage-name').textContent = STAGE_NAMES[g.stage] || ('단계 '+g.stage);
   const readyCount = data.teams.filter(t=>t.ready).length;
   $('stage-prog').textContent = `${readyCount}/${data.teams.length}조 완료`;
+  renderStepper(g.stage);
+  renderBoard(data.teams);
 
   const isQuiz = QUIZ_STAGES.includes(g.stage);
   $('quiz-panel').classList.toggle('hidden', !isQuiz);
@@ -187,7 +260,7 @@ function renderTeamTable(teams){
   teams.forEach(t => {
     const choice = t.career || t.college || t.high || t.middle || t.elem || t.kinder || '-';
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${t.label}</td><td class="money">${(t.assets||0).toLocaleString()}</td>
+    tr.innerHTML = `<td>${t.label}</td><td>${tierChipHtml(t.born_assets)}</td><td class="money">${(t.assets||0).toLocaleString()}</td>
       <td>${t.academic_score}</td><td>${choice}</td>
       <td><span class="badge ${t.ready?'ready':''}">${t.ready?'완료':'대기'}</span></td>`;
     tbody.appendChild(tr);
@@ -251,7 +324,7 @@ function renderFinal(teams){
   sorted.forEach((t,i) => {
     const div = document.createElement('div');
     div.className = 'rankrow';
-    div.innerHTML = `<span>${i+1}위 · ${t.label} · ${t.college||''} · ${t.career||''}</span>
+    div.innerHTML = `<span>${i+1}위 ${i===0?'👑':''} · ${t.label} · ${tierChipHtml(t.born_assets)} → ${t.college||''} · ${t.career||''}</span>
       <span class="money">${(t.assets||0).toLocaleString()}만원</span>`;
     wrap.appendChild(div);
   });
