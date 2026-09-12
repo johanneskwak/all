@@ -146,9 +146,9 @@ const $ = (id) => document.getElementById(id);
 let teacherCode = null, pollTimer = null;
 const STAGE_NAMES = {1:'① 출생',2:'② 유치원 선택',3:'③ 초등 입시 퀴즈',4:'④ 초등학교 선택',
   5:'⑤ 중학교 입시 퀴즈',6:'⑥ 중학교 선택',7:'⑦ 고등학교 입시 퀴즈',8:'⑧ 고등학교 선택',
-  9:'⑨ 대학 입시 퀴즈',10:'⑩ 대학 선택',11:'⑪ 직업 선택',12:'⑫ 네트워크 카드'};
-const STAGE_ICONS = {1:'🎲',2:'🧸',3:'📝',4:'🏫',5:'📝',6:'🏫',7:'📝',8:'🏫',9:'📝',10:'🎓',11:'💼',12:'🤝'};
-const STAGE_SHORT = {1:'출생',2:'유치원',3:'초등퀴즈',4:'초등',5:'중등퀴즈',6:'중등',7:'고등퀴즈',8:'고등',9:'대입퀴즈',10:'대학',11:'직업',12:'카드'};
+  9:'⑨ 대학 입시 퀴즈',10:'⑩ 대학 선택',11:'⑪ 직업 선택',12:'⑫ 네트워크 카드',13:'⑬ 취미 선택'};
+const STAGE_ICONS = {1:'🎲',2:'🧸',3:'📝',4:'🏫',5:'📝',6:'🏫',7:'📝',8:'🏫',9:'📝',10:'🎓',11:'💼',12:'🤝',13:'🎨'};
+const STAGE_SHORT = {1:'출생',2:'유치원',3:'초등퀴즈',4:'초등',5:'중등퀴즈',6:'중등',7:'고등퀴즈',8:'고등',9:'대입퀴즈',10:'대학',11:'직업',12:'카드',13:'취미'};
 const QUIZ_STAGES = [3,5,7,9];
 
 /* 가문(출발 계층) — 물려받은 자산 규모로 정하는 순수 연출용 등급. */
@@ -205,7 +205,7 @@ function startPolling(){
 function renderStepper(stage){
   const el = $('stepper');
   el.innerHTML = '';
-  for(let s=1; s<=12; s++){
+  for(let s=1; s<=13; s++){
     const cell = document.createElement('div');
     cell.className = 'step' + (s < stage ? ' done' : s === stage ? ' now' : '');
     cell.innerHTML = `<div class="step-dot">${s<stage ? '✓' : STAGE_ICONS[s]}</div><div class="step-label">${STAGE_SHORT[s]}</div>`;
@@ -258,7 +258,7 @@ function renderTeamTable(teams){
   const tbody = $('team-tbody');
   tbody.innerHTML = '';
   teams.forEach(t => {
-    const choice = t.career || t.college || t.high || t.middle || t.elem || t.kinder || '-';
+    const choice = t.hobby || t.career || t.college || t.high || t.middle || t.elem || t.kinder || '-';
     const tr = document.createElement('tr');
     tr.innerHTML = `<td>${t.label}</td><td>${tierChipHtml(t.born_assets)}</td><td class="money">${(t.assets||0).toLocaleString()}</td>
       <td>${t.academic_score}</td><td>${choice}</td>
@@ -324,7 +324,7 @@ function renderFinal(teams){
   sorted.forEach((t,i) => {
     const div = document.createElement('div');
     div.className = 'rankrow';
-    div.innerHTML = `<span>${i+1}위 ${i===0?'👑':''} · ${t.label} · ${tierChipHtml(t.born_assets)} → ${t.college||''} · ${t.career||''}</span>
+    div.innerHTML = `<span>${i+1}위 ${i===0?'👑':''} · ${t.label} · ${tierChipHtml(t.born_assets)} → ${t.college||''} · ${t.career||''}${t.hobby ? ' · '+t.hobby : ''}</span>
       <span class="money">${(t.assets||0).toLocaleString()}만원</span>`;
     wrap.appendChild(div);
   });

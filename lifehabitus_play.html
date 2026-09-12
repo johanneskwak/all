@@ -230,6 +230,17 @@
   </details>
 </div>
 
+<div class="card hidden" id="view-hobby">
+  <div class="stagelabel">⑬ 취미를 선택하세요</div>
+  <div class="sub center" style="margin-bottom:6px;">취미마다 비용과, 그 취미가 열어주는 인맥(네트워크 보너스)이 달라요</div>
+  <div id="hobby-opts"></div>
+  <div class="sub center" id="hobby-msg" style="margin-top:10px;"></div>
+  <details class="theory">
+    <summary>피에르 부르디외 — 구별짓기(Distinction)</summary>
+    <div class="body">부르디외는 저서 <i>구별짓기</i>에서 취미·취향조차 계급을 드러내고 재생산한다고 보았습니다. 승마·요트·골프·사진처럼 진입장벽이 있는 취미는 비슷한 상류층끼리 어울리는 자리를 만들어 값비싼 <b>사회자본</b>으로 이어지지만, 축구·권투처럼 접근성이 높은 취미는 즐겁고 건강엔 좋아도 그런 "연결"로 잘 이어지지 않는다는 것이 그의 관찰이었어요. 같은 돈이라도 어디에 쓰느냐에 따라 되돌아오는 인맥의 질이 달라지는 걸 직접 확인해보세요.</div>
+  </details>
+</div>
+
 <div class="card hidden" id="view-quiz">
   <div class="sub center" id="quiz-round-label"></div>
   <div class="dots" id="qz-dots"></div>
@@ -259,14 +270,14 @@ const SUPABASE_URL = "https://wsmwfhoeoravcmmvreqq.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndzbXdmaG9lb3JhdmNtbXZyZXFxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5MDQwNDIsImV4cCI6MjEwMzQ4MDA0Mn0.5nrCqntzuAc8AFSUZe8CFjO3YLFPjEp7xYQr_rstTL8";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const $ = (id) => document.getElementById(id);
-const views = ['view-join','view-birth','view-choice','view-career','view-network','view-quiz','view-waiting','view-ended'];
+const views = ['view-join','view-birth','view-choice','view-career','view-network','view-hobby','view-quiz','view-waiting','view-ended'];
 function show(id){ views.forEach(v => $(v).classList.toggle('hidden', v!==id)); }
 
 const STAGE_NAMES = {1:'① 출생',2:'② 유치원 선택',3:'③ 초등 입시 퀴즈',4:'④ 초등학교 선택',
   5:'⑤ 중학교 입시 퀴즈',6:'⑥ 중학교 선택',7:'⑦ 고등학교 입시 퀴즈',8:'⑧ 고등학교 선택',
-  9:'⑨ 대학 입시 퀴즈',10:'⑩ 대학 선택',11:'⑪ 직업 선택',12:'⑫ 네트워크 카드'};
-const STAGE_ICONS = {1:'🎲',2:'🧸',3:'📝',4:'🏫',5:'📝',6:'🏫',7:'📝',8:'🏫',9:'📝',10:'🎓',11:'💼',12:'🤝'};
-const STAGE_SHORT = {1:'출생',2:'유치원',3:'초등퀴즈',4:'초등',5:'중등퀴즈',6:'중등',7:'고등퀴즈',8:'고등',9:'대입퀴즈',10:'대학',11:'직업',12:'카드'};
+  9:'⑨ 대학 입시 퀴즈',10:'⑩ 대학 선택',11:'⑪ 직업 선택',12:'⑫ 네트워크 카드',13:'⑬ 취미 선택'};
+const STAGE_ICONS = {1:'🎲',2:'🧸',3:'📝',4:'🏫',5:'📝',6:'🏫',7:'📝',8:'🏫',9:'📝',10:'🎓',11:'💼',12:'🤝',13:'🎨'};
+const STAGE_SHORT = {1:'출생',2:'유치원',3:'초등퀴즈',4:'초등',5:'중등퀴즈',6:'중등',7:'고등퀴즈',8:'고등',9:'대입퀴즈',10:'대학',11:'직업',12:'카드',13:'취미'};
 const CHOICE_STAGE = { 2:{fn:'lg2_kinder_pick', opts:'lg2_kinder_opts', title:'② 유치원을 선택하세요'},
   4:{fn:'lg2_elem_pick', opts:'lg2_elem_opts', title:'④ 초등학교를 선택하세요'},
   6:{fn:'lg2_middle_pick', opts:'lg2_middle_opts', title:'⑥ 중학교를 선택하세요'},
@@ -281,7 +292,7 @@ const STAGE_THEORY = {
   5: { title: '로버트 머튼 — 마태 효과(Matthew Effect)', text: '"있는 자는 더 받고, 없는 자는 있는 것마저 빼앗긴다"는 구절에서 이름 붙은 <b>마태 효과</b>. 사회학자 <b>머튼</b>은 초기의 작은 우위(사교육, 조기교육)가 누적되어 점점 더 큰 격차로 벌어지는 현상을 이렇게 설명했습니다.' },
   6: { title: '제임스 콜먼 — 콜먼 보고서(1966)', text: '미국 정부의 의뢰로 <b>콜먼</b>이 작성한 이 보고서는 "학생의 성취를 가장 잘 예측하는 것은 학교 시설이 아니라 가정 배경"이라는 결론을 냈습니다. 콜먼은 이후 신뢰·네트워크 같은 <b>사회자본(social capital)</b> 개념을 발전시켰어요.' },
   7: { title: '앨런 크루거 — 위대한 개츠비 곡선', text: '경제학자 <b>크루거</b>는 한 사회의 소득 불평등이 클수록 세대 간 계층 이동이 어려워진다는 <b>위대한 개츠비 곡선</b>을 제시했습니다. 격차가 큰 사회일수록 "개천에서 용 나기"가 더 힘들어진다는 뜻이에요.' },
-  8: { title: '교육 트래킹(Tracking) 이론', text: '학생을 능력·계열별로 다른 트랙(특목고·자사고·일반고)에 배치하는 제도를 <b>트래킹</b>이라 합니다. 지지자는 맞춤 교육의 효율성을, 비판자는 트랙 간 이동이 어려워 계층이 고착된다는 점을 지적합니다.' },
+  8: { title: '교육 트래킹(Tracking) 이론', text: '학생을 능력·계열별로 다른 트랙(특목고·자사고·일반고)에 배치하는 제도를 <b>트래킹</b>이라 합니다. 지지자는 맞춤 교육의 효율성을, 비판자는 트랙 간 이동이 어려워 계층이 고착된다는 점을 지적합니다. <b>이 게임도 이를 반영합니다</b>: 국제중 출신은 특목고 진학에 필요한 학업점수가 2점 낮아지고, 특목고 출신은 엘리트 대학 진학에 필요한 점수가 2점 낮아져요 — 같은 5문제 퀴즈라도 이전 트랙에 따라 "3개만 맞아도 통과"와 "5개를 다 맞아야 통과"로 문턱이 달라지는 셈이죠.' },
   9: { title: '블라우 & 던컨 — 지위획득모형', text: '사회학자 <b>블라우와 던컨</b>은 "부모의 학력·직업 → 본인의 학력 → 첫 직업 → 현재 지위"로 이어지는 경로를 통계로 검증한 <b>지위획득모형(status attainment model)</b>을 만들었습니다. 대입은 이 경로에서 가장 중요한 병목 지점 중 하나예요.' },
   10:{ title: '게리 베커 — 인적자본이론', text: '<b>베커</b>는 교육을 "미래 소득을 위한 투자"로 설명하는 <b>인적자본이론</b>을 제시했습니다. 대학의 등록금(비용)과 등급별 초봉(수익)을 비교해 선택하는 지금 이 화면이 바로 그 투자 결정이에요.' },
 };
@@ -303,6 +314,17 @@ function theoryHtml(stage){
   const t = STAGE_THEORY[stage];
   if(!t) return '';
   return `<details class="theory"><summary>${t.title}</summary><div class="body">${t.text}</div></details>`;
+}
+
+/* 트랙 보너스: 이전 단계에서 엘리트 트랙(국제학교/국제중/특목고 등)을 선택했다면
+   다음 단계 최상위 선택지에 필요한 학업점수가 2점 낮아집니다 — 서버(lg2_*_pick)의
+   lg2_track_bonus와 동일한 규칙을 그대로 미러링해서 "필요 학업점수" 표시에 반영합니다. */
+function trackDiscount(me, stage){
+  if(stage===4) return me.kinder === '비싼 영어유치원' ? 2 : 0;
+  if(stage===6) return me.elem === '국제학교' ? 2 : 0;
+  if(stage===8) return me.middle === '국제중' ? 2 : 0;
+  if(stage===10) return ['특목고','전국형자사고','유학','국제학교'].includes(me.high) ? 2 : 0;
+  return 0;
 }
 
 const urlCode = new URLSearchParams(location.search).get('code');
@@ -408,7 +430,7 @@ function renderStepper(stage){
   wrap.classList.remove('hidden');
   const el = $('stepper');
   el.innerHTML = '';
-  for(let s=1; s<=12; s++){
+  for(let s=1; s<=13; s++){
     const cell = document.createElement('div');
     cell.className = 'step' + (s < stage ? ' done' : s === stage ? ' now' : '');
     cell.innerHTML = `<div class="step-dot">${s<stage ? '✓' : STAGE_ICONS[s]}</div><div class="step-label">${STAGE_SHORT[s]}</div>`;
@@ -491,6 +513,7 @@ async function pollInner(){
   if([3,5,7,9].includes(g.stage)){ return renderQuiz(me, g); }
   if(g.stage === 11){ return renderCareer(me, g); }
   if(g.stage === 12){ return renderNetwork(me, g); }
+  if(g.stage === 13){ return renderHobby(me, g); }
 }
 
 function renderBirth(me, g){
@@ -545,7 +568,9 @@ async function renderChoice(me, g){
 
   $('choice-title').textContent = stageInfo.title;
   const { data: opts } = await sb.rpc(stageInfo.opts);
-  const discount = Math.min(2, Math.floor((me.assets||0)/30000));
+  const moneyDiscount = Math.min(2, Math.floor((me.assets||0)/30000));
+  const track = trackDiscount(me, g.stage);
+  const discount = moneyDiscount + track;
   const wrap = $('choice-opts');
   wrap.innerHTML = '';
   opts.forEach(o => {
@@ -556,7 +581,7 @@ async function renderChoice(me, g){
     const div = document.createElement('button');
     div.className = 'opt' + (eligible ? '' : ' locked');
     div.innerHTML = `<div class="t">${o.choice}</div>
-      <div class="d">${o.note} · 비용 ${o.cost.toLocaleString()}만원${o.cutoff>0 ? ' · 필요 학업점수 '+need : ''}${needsAbroad ? ' · 중학교 유학 필요':''}</div>`;
+      <div class="d">${o.note} · 비용 ${o.cost.toLocaleString()}만원${o.cutoff>0 ? ' · 필요 학업점수 '+need : ''}${needsAbroad ? ' · 중학교 유학 필요':''}${o.cutoff>0 && track>0 ? ' · 🎓 이전 트랙 보너스 -'+track:''}</div>`;
     div.onclick = () => pickChoice(stageInfo.fn, o.choice);
     wrap.appendChild(div);
   });
@@ -645,7 +670,51 @@ async function pickNetworkCard(cardId){
   setTimeout(poll, 400);
 }
 
-let lastQuizKey = null, submitting = false;
+let renderedHobbyKey = null;
+async function renderHobby(me, g){
+  if(me.ready){
+    $('waiting-msg').innerHTML = `취미 선택 완료: <b>${me.hobby||''}</b><br><span class="sub">${freePlay ? '결과를 정리하는 중…' : '다음 단계를 기다리는 중…'}</span>`;
+    show('view-waiting');
+    return;
+  }
+  if(renderedHobbyKey === 'hobby'){ show('view-hobby'); return; }
+  renderedHobbyKey = 'hobby';
+
+  const { data: opts, error } = await sb.rpc('lg2_hobby_opts');
+  const wrap = $('hobby-opts');
+  wrap.innerHTML = '';
+  if(!error){
+    (opts||[]).forEach(o => {
+      const affordable = (me.assets||0) >= o.cost;
+      const div = document.createElement('button');
+      div.className = 'opt' + (affordable ? '' : ' locked');
+      div.innerHTML = `<div class="t">${o.choice} <span class="sub">(${o.tier})</span></div>
+        <div class="d">${o.note} · 비용 ${o.cost.toLocaleString()}만원 · 네트워크 +${o.network_bonus.toLocaleString()}만원</div>`;
+      div.onclick = () => pickHobby(o.choice);
+      wrap.appendChild(div);
+    });
+  }
+  $('hobby-msg').textContent = '';
+  show('view-hobby');
+}
+async function pickHobby(choice){
+  $('hobby-msg').textContent = '처리 중…';
+  const { data, error } = await sb.rpc('lg2_hobby_pick', { p_join: joinCode, p_choice: choice });
+  if(error){ $('hobby-msg').textContent = error.message; return; }
+  $('hobby-msg').textContent = `취미 선택: ${data.choice} (네트워크 +${data.bonus.toLocaleString()}만원)`;
+  await withFreePlayLock(freePlayAdvance);
+  renderedHobbyKey = null;
+  setTimeout(poll, 400);
+}
+
+let lastQuizKey = null, submitting = false, lastTheoryStage = null;
+// 이론 <details>는 stage가 바뀔 때만 새로 그립니다. 매 poll(1.5초)마다 innerHTML을
+// 덮어쓰면 사용자가 펼쳐놓은 <details>가 그 즉시 다시 닫혀버리는 문제가 있었습니다.
+function setTheory(elId, stage){
+  if(lastTheoryStage === stage) return;
+  lastTheoryStage = stage;
+  $(elId).innerHTML = theoryHtml(stage);
+}
 async function renderQuiz(me, g){
   const { data, error } = await sb.rpc('lg2_quiz_view', { p_join: joinCode });
   if(error || !data.active){
@@ -653,7 +722,7 @@ async function renderQuiz(me, g){
     $('qz-text').textContent = freePlay ? '퀴즈를 준비하는 중…' : '진행자가 퀴즈를 시작할 때까지 기다려주세요…';
     $('qz-choices').innerHTML = '';
     $('qz-msg').textContent = '';
-    $('quiz-theory').innerHTML = theoryHtml(g.stage);
+    setTheory('quiz-theory', g.stage);
     show('view-quiz');
     if(freePlay && !freePlayBusy){
       await withFreePlayLock(freePlayQuizStart);
@@ -665,7 +734,7 @@ async function renderQuiz(me, g){
 
   $('quiz-round-label').textContent = `${STAGE_NAMES[g.stage]}`;
   $('qz-text').textContent = data.question;
-  $('quiz-theory').innerHTML = theoryHtml(g.stage);
+  setTheory('quiz-theory', g.stage);
 
   const dots = $('qz-dots');
   dots.innerHTML = '';
@@ -778,7 +847,7 @@ async function renderFinal(me){
     data.forEach((t,i) => {
       const row = document.createElement('div');
       row.className = 'lbrow' + (t.label === myLabel ? ' me' : '') + (i===0 ? ' top' : '');
-      row.innerHTML = `<span><span class="rank">${i+1}</span>${i===0?'👑 ':''}${t.label} · ${t.college||''} · ${t.career||''}${t.card ? ' · '+t.card : ''}</span><span class="money">${(t.assets||0).toLocaleString()}만원</span>`;
+      row.innerHTML = `<span><span class="rank">${i+1}</span>${i===0?'👑 ':''}${t.label} · ${t.college||''} · ${t.career||''}${t.card ? ' · '+t.card : ''}${t.hobby ? ' · '+t.hobby : ''}</span><span class="money">${(t.assets||0).toLocaleString()}만원</span>`;
       wrap.appendChild(row);
     });
     const badges = computeBadges(myLabel, data);
