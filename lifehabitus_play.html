@@ -33,6 +33,10 @@
     background:var(--accent); color:#04222a; cursor:pointer; margin-top:8px;
   }
   button:disabled{ opacity:.4; }
+  button.ghost{ background:var(--card2); color:var(--text); border:1px solid #2a3b57; }
+  .or-sep{ display:flex; align-items:center; gap:10px; margin:14px 0 4px; color:var(--sub); font-size:12px; }
+  .or-sep::before, .or-sep::after{ content:''; flex:1; height:1px; background:#2a3b57; }
+  .freeplay-tag{ display:inline-block; margin-top:6px; font-size:11px; font-weight:800; color:var(--accent); background:color-mix(in srgb, var(--accent) 16%, var(--card2)); padding:3px 9px; border-radius:999px; }
   .statusbar{
     display:flex; align-items:center; gap:8px; width:100%; max-width:440px; margin-bottom:4px; font-size:13px; color:var(--sub);
     background:color-mix(in srgb, var(--card) 85%, transparent); border:1px solid #223252; border-radius:999px;
@@ -140,6 +144,14 @@
     display:inline-flex; align-items:center; gap:6px; padding:7px 13px; border-radius:999px;
     background:var(--card2); border:1px solid #2a3b57; font-weight:800; font-size:12px;
   }
+
+  /* ---- theory callouts ---- */
+  .theory{ background:var(--card2); border:1px solid #2a3b57; border-left:4px solid var(--accent); border-radius:10px; padding:2px 14px; margin-top:14px; }
+  .theory summary{ cursor:pointer; font-weight:800; color:var(--accent); list-style:none; padding:11px 0; font-size:13px; display:flex; align-items:center; gap:6px; }
+  .theory summary::-webkit-details-marker{ display:none; }
+  .theory summary::before{ content:'📖'; }
+  .theory .body{ padding-bottom:14px; font-size:12.5px; color:var(--sub); line-height:1.6; }
+  .theory .body b{ color:var(--text); }
 </style>
 </head>
 <body>
@@ -148,6 +160,8 @@
 <div class="card" id="view-join">
   <input type="text" id="in-code" placeholder="조 코드 4자리" maxlength="4" inputmode="numeric">
   <button id="btn-join">입장하기</button>
+  <div class="or-sep">또는</div>
+  <button id="btn-freeplay" class="ghost">🎮 코드 없이 혼자 체험하기</button>
   <div class="sub center" id="join-msg" style="margin-top:8px;"></div>
 </div>
 
@@ -180,18 +194,27 @@
     <div class="reveal-name" id="birth-name"></div>
     <div class="sub" id="birth-detail"></div>
   </div>
+  <details class="theory">
+    <summary>피에르 부르디외 — 자본과 아비투스</summary>
+    <div class="body">가정의 <b>경제자본</b>(재산)·<b>문화자본</b>(취향, 학력)·<b>사회자본</b>(인맥)은 대물림됩니다. 부르디외는 이렇게 형성된 취향과 습관을 <b>아비투스(habitus)</b>라 불렀어요. 지금 정해진 가문은 완전히 무작위지만, 현실에서는 "운"처럼 보이는 출발선이 이후 선택의 폭을 크게 좌우합니다. 이 게임의 이름이 바로 여기서 왔어요.</div>
+  </details>
 </div>
 
 <div class="card hidden" id="view-choice">
   <div class="stagelabel" id="choice-title"></div>
   <div id="choice-opts"></div>
   <div class="sub center" id="choice-msg" style="margin-top:10px;"></div>
+  <div id="choice-theory"></div>
 </div>
 
 <div class="card hidden" id="view-career">
   <div class="stagelabel">⑪ 직업을 선택하세요</div>
   <div id="career-opts"></div>
   <div class="sub center" id="career-msg" style="margin-top:10px;"></div>
+  <details class="theory">
+    <summary>게리 베커 — 인적자본이론 / 마이클 스펜스 — 신호이론</summary>
+    <div class="body">경제학자 <b>게리 베커</b>는 교육과 훈련을 "미래 소득을 위한 투자"로 보는 <b>인적자본이론</b>을 제시했습니다. 반면 <b>마이클 스펜스</b>는 학위가 실제 생산성보다는 "능력이 있다는 신호"에 가깝다고 보는 <b>신호이론(signaling theory)</b>을 내놓았어요. 대학 등급이 곧바로 직업 선택지와 초봉에 반영되는 이 단계는 두 이론을 동시에 보여줍니다.</div>
+  </details>
 </div>
 
 <div class="card hidden" id="view-network">
@@ -199,6 +222,10 @@
   <div class="sub center" style="margin-bottom:6px;">3장 중 1장을 골라 자산 보너스를 받으세요</div>
   <div id="network-opts"></div>
   <div class="sub center" id="network-msg" style="margin-top:10px;"></div>
+  <details class="theory">
+    <summary>마크 그라노베터 — 약한 연결의 힘 / 콜먼 — 사회자본</summary>
+    <div class="body"><b>그라노베터</b>는 실제로 취업 정보를 가장 잘 가져다주는 것은 가까운 친구가 아니라 "약하게 연결된" 지인이라는 <b>약한 연결의 힘(strength of weak ties)</b>을 밝혔습니다. 카드로 표현된 네트워크는 <b>콜먼</b>과 <b>부르디외</b>가 말한 <b>사회자본</b> — "무엇을 아는가"만큼 "누구를 아는가"도 자원이 되는 현상을 보여줍니다.</div>
+  </details>
 </div>
 
 <div class="card hidden" id="view-quiz">
@@ -207,6 +234,7 @@
   <div class="qtext" id="qz-text"></div>
   <div class="choicegrid" id="qz-choices"></div>
   <div class="sub center" id="qz-msg" style="margin-top:10px;"></div>
+  <div id="quiz-theory"></div>
 </div>
 
 <div class="card hidden center" id="view-waiting">
@@ -217,6 +245,10 @@
   <div class="stagelabel">🏁 최종 결과</div>
   <div id="final-list" style="margin-top:10px;"></div>
   <div class="badge-row" id="badge-row"></div>
+  <details class="theory" style="text-align:left;">
+    <summary>부르디외의 문화재생산이론 / 퍼트넘의 사회자본</summary>
+    <div class="body">부르디외는 학교가 겉보기엔 공정한 시험으로 학생을 평가하지만, 실제로는 이미 유리한 문화자본을 가진 학생에게 유리하게 작동해 계층을 대물림한다고 보았습니다 — <b>문화재생산이론</b>. 정치학자 <b>로버트 퍼트넘</b>은 저서 <i>나 홀로 볼링</i>에서 공동체의 신뢰와 네트워크(사회자본)가 얇아질수록 계층 이동이 더 어려워진다고 경고했어요. 오늘 여러분의 최종 자산은 "노력"과 "출발선"이 각각 얼마나 기여했을까요?</div>
+  </details>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -239,6 +271,19 @@ const CHOICE_STAGE = { 2:{fn:'lg2_kinder_pick', opts:'lg2_kinder_opts', title:'�
   8:{fn:'lg2_high_pick', opts:'lg2_high_opts', title:'⑧ 고등학교를 선택하세요'},
   10:{fn:'lg2_college_pick', opts:'lg2_college_opts', title:'⑩ 대학교를 선택하세요'} };
 
+/* 단계별로 함께 살펴보는 사회학·경제학·교육학 이론 — 선택/퀴즈 화면은 stage로 재사용되므로 JS에서 주입 */
+const STAGE_THEORY = {
+  2: { title: '제임스 헤크만 — 헤크만 곡선', text: '노벨경제학상 수상자 <b>헤크만</b>은 "인적자본 투자수익률은 어릴수록 높다"는 <b>헤크만 곡선</b>을 제시했습니다. 영어유치원 같은 조기 사교육 투자가 값비싼 이유는, 이 시기의 투자가 평생 능력 형성에 가장 큰 영향을 준다고 보기 때문이에요.' },
+  3: { title: '마이클 영 — 능력주의(meritocracy)의 역설', text: '"능력주의"라는 말을 처음 만든 사회학자 <b>마이클 영</b>은 원래 이 단어를 디스토피아 경고로 썼습니다. 시험은 공정해 보이지만, 시험을 준비하는 과정 자체가 가정의 자본에 크게 좌우된다는 점이 능력주의의 역설이에요.' },
+  4: { title: '찰스 티부 — 발로 하는 투표(Tiebout Model)', text: '경제학자 <b>티부</b>는 사람들이 더 나은 학군·공공서비스를 찾아 거주지를 옮기는 현상을 "발로 하는 투표"라 설명했습니다. 국제학교·사립초 선택은 결국 교육이라는 재화를 "구매"하는 행위와 비슷해요.' },
+  5: { title: '로버트 머튼 — 마태 효과(Matthew Effect)', text: '"있는 자는 더 받고, 없는 자는 있는 것마저 빼앗긴다"는 구절에서 이름 붙은 <b>마태 효과</b>. 사회학자 <b>머튼</b>은 초기의 작은 우위(사교육, 조기교육)가 누적되어 점점 더 큰 격차로 벌어지는 현상을 이렇게 설명했습니다.' },
+  6: { title: '제임스 콜먼 — 콜먼 보고서(1966)', text: '미국 정부의 의뢰로 <b>콜먼</b>이 작성한 이 보고서는 "학생의 성취를 가장 잘 예측하는 것은 학교 시설이 아니라 가정 배경"이라는 결론을 냈습니다. 콜먼은 이후 신뢰·네트워크 같은 <b>사회자본(social capital)</b> 개념을 발전시켰어요.' },
+  7: { title: '앨런 크루거 — 위대한 개츠비 곡선', text: '경제학자 <b>크루거</b>는 한 사회의 소득 불평등이 클수록 세대 간 계층 이동이 어려워진다는 <b>위대한 개츠비 곡선</b>을 제시했습니다. 격차가 큰 사회일수록 "개천에서 용 나기"가 더 힘들어진다는 뜻이에요.' },
+  8: { title: '교육 트래킹(Tracking) 이론', text: '학생을 능력·계열별로 다른 트랙(특목고·자사고·일반고)에 배치하는 제도를 <b>트래킹</b>이라 합니다. 지지자는 맞춤 교육의 효율성을, 비판자는 트랙 간 이동이 어려워 계층이 고착된다는 점을 지적합니다.' },
+  9: { title: '블라우 & 던컨 — 지위획득모형', text: '사회학자 <b>블라우와 던컨</b>은 "부모의 학력·직업 → 본인의 학력 → 첫 직업 → 현재 지위"로 이어지는 경로를 통계로 검증한 <b>지위획득모형(status attainment model)</b>을 만들었습니다. 대입은 이 경로에서 가장 중요한 병목 지점 중 하나예요.' },
+  10:{ title: '게리 베커 — 인적자본이론', text: '<b>베커</b>는 교육을 "미래 소득을 위한 투자"로 설명하는 <b>인적자본이론</b>을 제시했습니다. 대학의 등록금(비용)과 등급별 초봉(수익)을 비교해 선택하는 지금 이 화면이 바로 그 투자 결정이에요.' },
+};
+
 /* 가문(출발 계층) — 물려받은 자산 규모로 정하는 순수 연출용 등급. 실제 게임 로직에는 영향 없음. */
 const TIERS = [
   { min:100000, id:'diamond', name:'다이아몬드 가문', emoji:'💎', color:'#93a5ea' },
@@ -252,27 +297,69 @@ function tierChipHtml(bornAssets){
   const t = tierFor(bornAssets);
   return `<span class="tierchip" style="background:color-mix(in srgb, ${t.color} 22%, var(--card2)); color:${t.color};">${t.emoji} ${t.name}</span>`;
 }
+function theoryHtml(stage){
+  const t = STAGE_THEORY[stage];
+  if(!t) return '';
+  return `<details class="theory"><summary>${t.title}</summary><div class="body">${t.text}</div></details>`;
+}
 
 const urlCode = new URLSearchParams(location.search).get('code');
 if(urlCode) $('in-code').value = urlCode;
 
 let joinCode = null, pollTimer = null, renderedKey = null, myBornAssets = 0;
+let freePlay = false, freePlayAdminCode = null;
 
 function restore(){ const c = localStorage.getItem('lg2_code'); if(c) return c; return null; }
+const savedAdmin = localStorage.getItem('lg2_freeplay_admin');
+if(savedAdmin){ freePlay = true; freePlayAdminCode = savedAdmin; }
 const saved = restore();
 if(saved){ joinCode = saved; startAfterJoin(); }
 
 $('btn-join').onclick = () => {
   const code = $('in-code').value.trim();
   if(!/^\d{4}$/.test(code)){ $('join-msg').textContent = '4자리 코드를 입력해주세요.'; return; }
+  freePlay = false; freePlayAdminCode = null;
+  localStorage.removeItem('lg2_freeplay_admin');
   joinCode = code;
   localStorage.setItem('lg2_code', code);
+  startAfterJoin();
+};
+
+$('btn-freeplay').onclick = async () => {
+  $('btn-freeplay').disabled = true;
+  $('join-msg').textContent = '체험용 게임을 준비하는 중…';
+  const { data, error } = await sb.rpc('lg2_freeplay_create');
+  if(error){ $('join-msg').textContent = '준비 실패: ' + error.message; $('btn-freeplay').disabled = false; return; }
+  freePlay = true;
+  freePlayAdminCode = data.admin_code;
+  joinCode = data.join_code;
+  localStorage.setItem('lg2_code', joinCode);
+  localStorage.setItem('lg2_freeplay_admin', freePlayAdminCode);
   startAfterJoin();
 };
 
 function startAfterJoin(){
   poll();
   pollTimer = setInterval(poll, 1500);
+}
+
+/* 프리플레이(코드 없이 혼자 체험)일 때는 교사 역할까지 클라이언트가 스스로 수행합니다.
+   같은 admin_code로 만든 1인 게임이라 권한 문제 없이 lg2_next_stage 등을 그대로 호출합니다. */
+async function freePlayAdvance(){
+  if(!freePlay || !freePlayAdminCode) return;
+  await sb.rpc('lg2_next_stage', { p_code: freePlayAdminCode });
+}
+async function freePlayQuizStart(){
+  if(!freePlay || !freePlayAdminCode) return;
+  await sb.rpc('lg2_quiz_start', { p_code: freePlayAdminCode });
+}
+async function freePlayQuizReveal(){
+  if(!freePlay || !freePlayAdminCode) return;
+  await sb.rpc('lg_quiz_reveal', { p_code: freePlayAdminCode });
+}
+async function freePlayQuizNext(){
+  if(!freePlay || !freePlayAdminCode) return { data:null };
+  return await sb.rpc('lg2_quiz_next', { p_code: freePlayAdminCode });
 }
 
 function renderStepper(stage){
@@ -290,11 +377,11 @@ function renderStepper(stage){
   if(now) now.scrollIntoView({ inline:'center', block:'nearest' });
 }
 
-let boardTimer = 0;
 async function renderBoard(){
   if(!joinCode) return;
   const { data, error } = await sb.rpc('lg2_teams_public', { p_join: joinCode });
   if(error || !data || !data.length) return;
+  if(freePlay){ $('board-wrap').classList.add('hidden'); return; } // 혼자 할 땐 트랙이 의미가 없어 숨김
   $('board-wrap').classList.remove('hidden');
   const maxAssets = Math.max(1, ...data.map(t => t.assets||0));
   const track = $('board-track');
@@ -316,15 +403,18 @@ async function poll(){
   if(error){
     $('join-msg').textContent = '입장 실패: 코드를 확인해주세요.';
     localStorage.removeItem('lg2_code');
+    localStorage.removeItem('lg2_freeplay_admin');
+    freePlay = false; freePlayAdminCode = null;
     clearInterval(pollTimer);
     show('view-join');
+    $('btn-freeplay').disabled = false;
     return;
   }
   const me = data.me, g = data.game;
   myBornAssets = me.born_assets || 0;
 
   $('statusbar').classList.remove('hidden');
-  $('sb-label').textContent = me.label;
+  $('sb-label').textContent = me.label + (freePlay ? '' : '');
   $('sb-assets').textContent = (me.assets||0).toLocaleString();
   $('sb-score').textContent = me.academic_score;
   $('sb-tier').innerHTML = g.stage > 1 ? tierChipHtml(me.born_assets) : '';
@@ -352,7 +442,7 @@ function renderBirth(me, g){
     const t = tierFor(me.born_assets);
     $('waiting-msg').innerHTML = `${t.emoji} <b style="color:${t.color}">${t.name}</b>에서 출발!<br>
       자산 <b class="money">${(me.born_assets||0).toLocaleString()}만원</b> · 형제 ${me.siblings}명<br>
-      <span class="sub">다음 단계를 기다리는 중…</span>`;
+      <span class="sub">${freePlay ? '다음 단계로 이동하는 중…' : '다음 단계를 기다리는 중…'}</span>`;
     show('view-waiting');
   } else {
     $('birth-reveal').classList.remove('show');
@@ -382,14 +472,14 @@ $('btn-birth').onclick = async () => {
   rc.classList.add('show');
   $('birth-sub').textContent = '';
 
-  setTimeout(poll, 1800);
+  setTimeout(async () => { await freePlayAdvance(); poll(); }, 1800);
 };
 
 async function renderChoice(me, g){
   const stageInfo = CHOICE_STAGE[g.stage];
   if(me.ready){
     const key = ({2:'kinder',4:'elem',6:'middle',8:'high',10:'college'})[g.stage];
-    $('waiting-msg').innerHTML = `선택 완료: <b>${me[key]||''}</b><br><span class="sub">다음 단계를 기다리는 중…</span>`;
+    $('waiting-msg').innerHTML = `선택 완료: <b>${me[key]||''}</b><br><span class="sub">${freePlay ? '다음 단계로 이동하는 중…' : '다음 단계를 기다리는 중…'}</span>`;
     show('view-waiting');
     return;
   }
@@ -415,6 +505,7 @@ async function renderChoice(me, g){
     wrap.appendChild(div);
   });
   $('choice-msg').textContent = '';
+  $('choice-theory').innerHTML = theoryHtml(g.stage);
   show('view-choice');
 }
 
@@ -423,6 +514,7 @@ async function pickChoice(fnName, choice){
   const { data, error } = await sb.rpc(fnName, { p_join: joinCode, p_choice: choice });
   if(error){ $('choice-msg').textContent = error.message; return; }
   if(data.career){ $('choice-msg').textContent = `진로 확정: ${data.career} (연소득 ${data.pay.toLocaleString()}만원)`; }
+  await freePlayAdvance();
   renderedKey = null;
   setTimeout(poll, 400);
 }
@@ -430,7 +522,7 @@ async function pickChoice(fnName, choice){
 let renderedCareerKey = null;
 async function renderCareer(me, g){
   if(me.ready){
-    $('waiting-msg').innerHTML = `직업 확정: <b>${me.career||''}</b><br><span class="sub">다음 단계를 기다리는 중…</span>`;
+    $('waiting-msg').innerHTML = `직업 확정: <b>${me.career||''}</b><br><span class="sub">${freePlay ? '다음 단계로 이동하는 중…' : '다음 단계를 기다리는 중…'}</span>`;
     show('view-waiting');
     return;
   }
@@ -456,6 +548,7 @@ async function pickCareer(choiceId){
   const { data, error } = await sb.rpc('lg2_career_pick', { p_join: joinCode, p_choice: choiceId });
   if(error){ $('career-msg').textContent = error.message; return; }
   $('career-msg').textContent = `진로 확정: ${data.career} (초임 ${data.pay.toLocaleString()}만원)`;
+  await freePlayAdvance();
   renderedCareerKey = null;
   setTimeout(poll, 400);
 }
@@ -463,7 +556,7 @@ async function pickCareer(choiceId){
 let renderedNetworkKey = null;
 async function renderNetwork(me, g){
   if(me.ready){
-    $('waiting-msg').innerHTML = `카드 선택 완료<br><span class="sub">다음 단계를 기다리는 중…</span>`;
+    $('waiting-msg').innerHTML = `카드 선택 완료<br><span class="sub">${freePlay ? '결과를 정리하는 중…' : '다음 단계를 기다리는 중…'}</span>`;
     show('view-waiting');
     return;
   }
@@ -491,6 +584,7 @@ async function pickNetworkCard(cardId){
   const { data, error } = await sb.rpc('lg2_network_pick', { p_join: joinCode, p_card_id: cardId });
   if(error){ $('network-msg').textContent = error.message; return; }
   $('network-msg').textContent = `카드 선택: ${data.card} (자산 +${data.bonus.toLocaleString()}만원)`;
+  await freePlayAdvance();
   renderedNetworkKey = null;
   setTimeout(poll, 400);
 }
@@ -500,16 +594,19 @@ async function renderQuiz(me, g){
   const { data, error } = await sb.rpc('lg2_quiz_view', { p_join: joinCode });
   if(error || !data.active){
     $('qz-dots').innerHTML = '';
-    $('qz-text').textContent = '진행자가 퀴즈를 시작할 때까지 기다려주세요…';
+    $('qz-text').textContent = freePlay ? '퀴즈를 준비하는 중…' : '진행자가 퀴즈를 시작할 때까지 기다려주세요…';
     $('qz-choices').innerHTML = '';
     $('qz-msg').textContent = '';
+    $('quiz-theory').innerHTML = theoryHtml(g.stage);
     show('view-quiz');
+    if(freePlay){ await freePlayQuizStart(); setTimeout(poll, 300); }
     return;
   }
   if(submitting) return; // 낙관적 UI 표시 중에는 서버 데이터로 덮어쓰지 않음
 
   $('quiz-round-label').textContent = `${STAGE_NAMES[g.stage]}`;
   $('qz-text').textContent = data.question;
+  $('quiz-theory').innerHTML = theoryHtml(g.stage);
 
   const dots = $('qz-dots');
   dots.innerHTML = '';
@@ -542,7 +639,7 @@ async function renderQuiz(me, g){
     if(data.phase === 'reveal'){
       $('qz-msg').textContent = data.my_correct ? '정답입니다! 🎉' : '아쉬워요 😅';
     } else if(isLast){
-      $('qz-msg').textContent = `${data.total}문제를 모두 풀었어요! 선생님이 다음 단계로 넘길 때까지 기다려주세요 🎉`;
+      $('qz-msg').textContent = freePlay ? `${data.total}문제를 모두 풀었어요! 🎉` : `${data.total}문제를 모두 풀었어요! 선생님이 다음 단계로 넘길 때까지 기다려주세요 🎉`;
     } else {
       $('qz-msg').textContent = '제출 완료! 다음 문제를 기다려주세요.';
     }
@@ -559,13 +656,29 @@ async function submitQuiz(choiceIdx, btnEl, wrap){
   $('qz-msg').textContent = '제출 중…';
 
   const { error } = await sb.rpc('lg2_quiz_answer', { p_join: joinCode, p_choice: choiceIdx });
-  submitting = false;
   if(error){
+    submitting = false;
     Array.from(wrap.children).forEach(el => el.disabled = false);
     btnEl.classList.remove('picked');
     $('qz-msg').textContent = error.message;
     return;
   }
+
+  if(freePlay){
+    // 혼자 할 때는 진행자 역할도 스스로: 잠깐 제출 상태를 보여준 뒤 정답을 공개하고 다음 문제로 넘어갑니다.
+    await new Promise(res => setTimeout(res, 700));
+    await freePlayQuizReveal();
+    lastQuizKey = null; submitting = false;
+    await poll();
+    await new Promise(res => setTimeout(res, 1800));
+    const { data: nextData } = await freePlayQuizNext();
+    if(nextData && nextData.done){ await freePlayAdvance(); }
+    lastQuizKey = null;
+    poll();
+    return;
+  }
+
+  submitting = false;
   lastQuizKey = null;
   poll();
 }
@@ -581,11 +694,11 @@ function computeBadges(myLabel, data){
   const bornSorted = [...data].sort((a,b)=>(b.born_assets||0)-(a.born_assets||0));
   const bornIdx = bornSorted.findIndex(t => t.label === myLabel);
   const bornTopHalf = bornIdx < Math.ceil(bornSorted.length/2);
-  if(myIdx === 0) badges.push({ emoji:'👑', text:'자산 1위' });
+  if(sorted.length > 1 && myIdx === 0) badges.push({ emoji:'👑', text:'자산 1위' });
   if(!bornTopHalf && topHalf) badges.push({ emoji:'🚀', text:'흙수저 탈출' });
   if(bornTopHalf && !topHalf) badges.push({ emoji:'📉', text:'가문 자산을 지키지 못함' });
   if(bornTopHalf && topHalf) badges.push({ emoji:'🏰', text:'부의 대물림' });
-  if(myIdx === sorted.length-1 && sorted.length>1) badges.push({ emoji:'🌱', text:'다음 생엔 더 잘할 거예요' });
+  if(sorted.length > 1 && myIdx === sorted.length-1) badges.push({ emoji:'🌱', text:'다음 생엔 더 잘할 거예요' });
   return badges;
 }
 
@@ -610,6 +723,12 @@ async function renderFinal(me){
       pill.innerHTML = `${b.emoji} ${b.text}`;
       brow.appendChild(pill);
     });
+  }
+  if(freePlay){
+    const tag = document.createElement('div');
+    tag.className = 'freeplay-tag';
+    tag.textContent = '🎮 프리플레이로 완료했어요';
+    wrap.parentElement.insertBefore(tag, wrap);
   }
   show('view-ended');
 }
